@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="neon-green mb-0"><i class="fas fa-receipt me-2"></i>Order #{{ order['id'] }}</h2>
+        <a href="{{ url_for('download_receipt', order_id=order['id']) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-download me-1"></i>Download Receipt
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;">Order Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-dark mb-0">
+                        <thead>
+                            <tr style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                                <th style="color:#00ff41;">Item</th>
+                                <th style="color:#00ff41;">Author</th>
+                                <th style="color:#00ff41;">Qty</th>
+                                <th style="color:#00ff41;">Price</th>
+                                <th style="color:#00ff41;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr style="border-bottom:1px solid rgba(0,255,65,0.1);">
+                                <td>{{ item['title'] }}</td>
+                                <td class="text-muted">{{ item['author'] }}</td>
+                                <td>{{ item['quantity'] }}</td>
+                                <td>${{ "%.2f"|format(item['price']) }}</td>
+                                <td style="color:#00d4ff;">${{ "%.2f"|format(item['price'] * item['quantity']) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;">Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Status</small>
+                        <div>
+                            {% if order['status'] == 'confirmed' %}
+                            <span class="badge bg-success fs-6">Confirmed</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark fs-6">{{ order['status'] }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Date</small>
+                        <p class="mb-0">{{ order['created_at'] }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Shipping Address</small>
+                        <p class="mb-0">{{ order['shipping_address'] or 'Not provided' }}</p>
+                    </div>
+                    <hr style="border-color:rgba(0,255,65,0.2);">
+                    <div class="d-flex justify-content-between fw-bold fs-5">
+                        <span style="color:#00ff41;">Total</span>
+                        <span style="color:#00d4ff;">${{ "%.2f"|format(order['total']) }}</span>
+                    </div>
+                </div>
+            </div>
+            <a href="{{ url_for('order_history') }}" class="btn btn-outline-secondary w-100 mt-3">
+                <i class="fas fa-arrow-left me-1"></i>Back to Orders
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

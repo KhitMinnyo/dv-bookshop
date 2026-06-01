@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="neon-green mb-4"><i class="fas fa-credit-card me-2"></i>Checkout</h2>
+
+    <div class="row g-4">
+        <!-- Order Summary -->
+        <div class="col-lg-8">
+            <div class="card mb-4" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;">Order Summary</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead>
+                            <tr style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                                <th style="color:#00ff41;">Item</th>
+                                <th style="color:#00ff41;">Qty</th>
+                                <th style="color:#00ff41;">Price</th>
+                                <th style="color:#00ff41;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr style="border-bottom:1px solid rgba(0,255,65,0.1);">
+                                <td>{{ item['title'] }}</td>
+                                <td>{{ item['quantity'] }}</td>
+                                <td>${{ "%.2f"|format(item['price']) }}</td>
+                                <td style="color:#00d4ff;">${{ "%.2f"|format(item['price'] * item['quantity']) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Shipping -->
+            <div class="card mb-4" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;"><i class="fas fa-truck me-2"></i>Shipping Address</h5>
+                </div>
+                <div class="card-body">
+                    <textarea name="shipping_address" form="checkout-form" rows="3" 
+                              class="form-control bg-dark text-light border-secondary" 
+                              placeholder="Enter your shipping address..."></textarea>
+                </div>
+            </div>
+
+            <!-- Coupon -->
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;"><i class="fas fa-tag me-2"></i>Coupon Code</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('apply_coupon') }}" method="POST" class="d-flex gap-2">
+                        <input type="text" name="code" id="coupon-code-input" 
+                               class="form-control bg-dark text-light border-secondary" 
+                               placeholder="Enter coupon code">
+                        <button type="submit" class="btn btn-outline-warning">Apply</button>
+                        <button type="button" id="check-coupon-btn" class="btn btn-outline-secondary">Check</button>
+                    </form>
+                    <div id="coupon-feedback" class="mt-2 small"></div>
+                    {% if session.get('coupon_discount') %}
+                    <div class="mt-2 p-2 rounded" style="background:rgba(0,255,65,0.1);border:1px solid rgba(0,255,65,0.3);">
+                        <i class="fas fa-check-circle text-success me-1"></i>
+                        Coupon <strong>{{ session.get('coupon_code') }}</strong> applied: {{ session.get('coupon_discount') }}% off
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Sidebar -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top:80px;background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;"><i class="fas fa-wallet me-2"></i>Payment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Card on File</small>
+                        <p class="mb-0" style="color:#00d4ff;font-family:monospace;">
+                            <i class="fas fa-credit-card me-2"></i>{{ user['credit_card_number'] }}
+                        </p>
+                        <small class="text-muted">Exp: {{ user['credit_card_expiry'] }}</small>
+                    </div>
+
+                    <hr style="border-color:rgba(0,255,65,0.2);">
+
+                    <div class="mb-3">
+                        <small class="text-muted">Your Balance</small>
+                        <p class="mb-0 fs-4" style="color:#00ff41;" id="user-balance" data-balance="{{ user['balance'] }}">
+                            ${{ "%.2f"|format(user['balance']) }}
+                        </p>
+                    </div>
+
+                    <hr style="border-color:rgba(0,255,65,0.2);">
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Subtotal</span>
+                            <span>${{ "%.2f"|format(total) }}</span>
+                        </div>
+                        {% if session.get('coupon_discount') %}
+                        <div class="d-flex justify-content-between text-success">
+                            <span>Discount ({{ session.get('coupon_discount') }}%)</span>
+                            <span>-${{ "%.2f"|format(total * session.get('coupon_discount', 0) / 100) }}</span>
+                        </div>
+                        {% endif %}
+                        <hr style="border-color:rgba(0,255,65,0.2);">
+                        <div class="d-flex justify-content-between fw-bold fs-5">
+                            <span style="color:#00ff41;">Total</span>
+                            <span id="order-total" data-total="{{ total }}" style="color:#00d4ff;">${{ "%.2f"|format(total) }}</span>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('checkout') }}" method="POST" id="checkout-form">
+                        <!-- K3: Price manipulation — hidden total field -->
+                        <input type="hidden" name="total" value="{{ total }}">
+                        <button type="submit" class="btn btn-success w-100 btn-lg">
+                            <i class="fas fa-lock me-2"></i>Place Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="neon-green mb-4"><i class="fas fa-user-edit me-2"></i>Edit Profile</h2>
+
+    <div class="row g-4">
+        <!-- Profile Info -->
+        <div class="col-lg-6">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;"><i class="fas fa-id-card me-2"></i>Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('edit_profile') }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Email</label>
+                            <input type="email" name="email" class="form-control bg-dark text-light border-secondary" 
+                                   value="{{ user['email'] }}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Bio</label>
+                            <textarea name="bio" rows="4" class="form-control bg-dark text-light border-secondary" 
+                                      placeholder="Tell us about yourself...">{{ user['bio'] }}</textarea>
+                            <small class="text-muted">Supports HTML formatting</small>
+                        </div>
+                        <button type="submit" class="btn btn-outline-success">
+                            <i class="fas fa-save me-1"></i>Save Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Avatar Upload -->
+        <div class="col-lg-6">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;"><i class="fas fa-camera me-2"></i>Profile Picture</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <img src="{{ url_for('static', filename='uploads/' + user['profile_pic']) }}" 
+                             alt="Avatar" class="rounded-circle" style="width:100px;height:100px;object-fit:cover;border:2px solid rgba(0,255,65,0.3);">
+                    </div>
+                    <form action="{{ url_for('upload_avatar') }}" method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <input type="file" name="avatar" class="form-control bg-dark text-light border-secondary" accept="image/*">
+                            <small class="text-muted">Upload your profile picture</small>
+                        </div>
+                        <button type="submit" class="btn btn-outline-info w-100">
+                            <i class="fas fa-upload me-1"></i>Upload Avatar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="col-lg-6">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00d4ff;"><i class="fas fa-key me-2"></i>Change Password</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('change_password') }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">New Password</label>
+                            <input type="password" name="new_password" class="form-control bg-dark text-light border-secondary" required>
+                        </div>
+                        <button type="submit" class="btn btn-outline-warning">
+                            <i class="fas fa-lock me-1"></i>Change Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Email -->
+        <div class="col-lg-6">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00d4ff;"><i class="fas fa-envelope me-2"></i>Change Email</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('change_email') }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">New Email</label>
+                            <input type="email" name="new_email" class="form-control bg-dark text-light border-secondary" required>
+                        </div>
+                        <button type="submit" class="btn btn-outline-info">
+                            <i class="fas fa-envelope me-1"></i>Change Email
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="col-12">
+            <div class="card" style="background:rgba(255,0,85,0.05);border:1px solid rgba(255,0,85,0.3);">
+                <div class="card-header" style="border-bottom:1px solid rgba(255,0,85,0.3);">
+                    <h5 class="mb-0" style="color:#ff0055;"><i class="fas fa-exclamation-triangle me-2"></i>Danger Zone</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Once you delete your account, there is no going back.</p>
+                    <form action="{{ url_for('delete_account') }}" method="POST" class="danger-confirm">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fas fa-trash me-1"></i>Delete Account
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,214 @@
+/* ============================================================
+   Bookshop-M Dark Hacker Theme — Supplementary Styles
+   Base styles are in base.html <style> block.
+   This file provides additional utility classes and animations.
+   ============================================================ */
+
+/* Glitch effect for error pages */
+@keyframes glitch {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+}
+
+.glitch-text {
+    animation: glitch 0.3s infinite;
+    color: #ff0055;
+    text-shadow: 2px 0 #00ff41, -2px 0 #00d4ff;
+}
+
+/* Pulse animation for alerts */
+@keyframes pulse-border {
+    0% { border-color: rgba(0, 255, 65, 0.2); }
+    50% { border-color: rgba(0, 255, 65, 0.6); }
+    100% { border-color: rgba(0, 255, 65, 0.2); }
+}
+
+.pulse-border {
+    animation: pulse-border 2s infinite;
+}
+
+/* Scan line overlay */
+@keyframes scanline {
+    0% { top: -100%; }
+    100% { top: 100%; }
+}
+
+.scanline-overlay::after {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: rgba(0, 255, 65, 0.3);
+    animation: scanline 8s linear infinite;
+    pointer-events: none;
+}
+
+/* Typing cursor blink */
+@keyframes blink-cursor {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.typing-cursor::after {
+    content: '█';
+    color: #00ff41;
+    animation: blink-cursor 1s step-end infinite;
+}
+
+/* Matrix rain background (for hero sections) */
+@keyframes matrix-fall {
+    0% { transform: translateY(-100%); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* Card glow on hover */
+.card-glow:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3), 0 0 40px rgba(0, 255, 65, 0.1);
+    border-color: rgba(0, 255, 65, 0.5) !important;
+}
+
+/* Neon text utility */
+.neon-green {
+    color: #00ff41;
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.5), 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.neon-cyan {
+    color: #00d4ff;
+    text-shadow: 0 0 5px rgba(0, 212, 255, 0.5), 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.neon-red {
+    color: #ff0055;
+    text-shadow: 0 0 5px rgba(255, 0, 85, 0.5), 0 0 10px rgba(255, 0, 85, 0.3);
+}
+
+/* Progress bar for balance */
+.balance-bar {
+    height: 6px;
+    background: rgba(0, 255, 65, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.balance-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff41, #00d4ff);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* Badge styles */
+.badge-hacker {
+    background: rgba(0, 255, 65, 0.2);
+    color: #00ff41;
+    border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+.badge-admin {
+    background: rgba(255, 0, 85, 0.2);
+    color: #ff0055;
+    border: 1px solid rgba(255, 0, 85, 0.3);
+}
+
+.badge-moderator {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00d4ff;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+/* Table styles */
+.table-hacker {
+    color: #c0c0c0;
+}
+
+.table-hacker thead th {
+    border-bottom-color: rgba(0, 255, 65, 0.3);
+    color: #00ff41;
+    font-weight: 600;
+}
+
+.table-hacker td {
+    border-bottom-color: rgba(0, 255, 65, 0.1);
+}
+
+.table-hacker tbody tr:hover {
+    background: rgba(0, 255, 65, 0.05);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 65, 0.5);
+}
+
+/* File upload drop zone */
+.upload-zone {
+    border: 2px dashed rgba(0, 255, 65, 0.3);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-zone:hover {
+    border-color: #00ff41;
+    background: rgba(0, 255, 65, 0.05);
+}
+
+/* Admin stat card */
+.stat-card {
+    background: rgba(0, 255, 65, 0.05);
+    border: 1px solid rgba(0, 255, 65, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(0, 255, 65, 0.15);
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #00ff41;
+}
+
+.stat-card .stat-label {
+    color: #808080;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Receipt styles */
+.receipt-box {
+    background: #111;
+    border: 1px dashed rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    padding: 1.5rem;
+    font-family: 'Courier New', monospace;
+}

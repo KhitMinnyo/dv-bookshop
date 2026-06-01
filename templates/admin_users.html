@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+    <h2 class="neon-green mb-4"><i class="fas fa-users-cog me-2"></i>User Management</h2>
+
+    <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover mb-0" style="font-size:0.85rem;">
+                    <thead>
+                        <tr style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                            <th style="color:#00ff41;">ID</th>
+                            <th style="color:#00ff41;">Username</th>
+                            <th style="color:#00ff41;">Email</th>
+                            <th style="color:#00ff41;">Password</th>
+                            <th style="color:#00ff41;">Role</th>
+                            <th style="color:#00ff41;">Balance</th>
+                            <th style="color:#00ff41;">Card Number</th>
+                            <th style="color:#00ff41;">CVV</th>
+                            <th style="color:#00ff41;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr style="border-bottom:1px solid rgba(0,255,65,0.1);">
+                            <td>{{ user['id'] }}</td>
+                            <td style="color:#00d4ff;">{{ user['username'] }}</td>
+                            <td>{{ user['email'] }}</td>
+                            <td><code style="color:#ff0055;">{{ user['password'] }}</code></td>
+                            <td>
+                                {% if user['role'] == 'admin' %}<span class="badge" style="background:rgba(255,0,85,0.2);color:#ff0055;border:1px solid rgba(255,0,85,0.3);">admin</span>
+                                {% elif user['role'] == 'moderator' %}<span class="badge" style="background:rgba(0,212,255,0.2);color:#00d4ff;border:1px solid rgba(0,212,255,0.3);">mod</span>
+                                {% else %}<span class="badge" style="background:rgba(0,255,65,0.2);color:#00ff41;border:1px solid rgba(0,255,65,0.3);">user</span>{% endif %}
+                            </td>
+                            <td>${{ "%.2f"|format(user['balance']) }}</td>
+                            <td><code>{{ user['credit_card_number'] }}</code></td>
+                            <td><code>{{ user['credit_card_cvv'] }}</code></td>
+                            <td>
+                                {% if user['is_active'] %}<span class="badge bg-success">Active</span>
+                                {% else %}<span class="badge bg-danger">Inactive</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="mt-3 p-2 rounded" style="background:rgba(255,0,85,0.05);border:1px solid rgba(255,0,85,0.2);">
+        <small style="color:#ff0055;"><i class="fas fa-exclamation-triangle me-1"></i>
+        WARNING: This page displays sensitive user data including plaintext passwords and credit card info.</small>
+    </div>
+</div>
+{% endblock %}

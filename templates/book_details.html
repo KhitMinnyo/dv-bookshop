@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ book['title'] }} — Khit's Bookshop{% endblock %}
+
+{% block content %}
+<div class="book-details-page">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb-cyber mb-4 animate-in">
+        <a href="/" class="text-muted"><i class="fas fa-home"></i></a>
+        <span class="text-muted mx-2">/</span>
+        <a href="/books" class="text-muted">Books</a>
+        <span class="text-muted mx-2">/</span>
+        <span class="text-green">{{ book['title'] }}</span>
+    </nav>
+
+    <!-- Book Details -->
+    <div class="row g-4 mb-5">
+        <!-- Book Image -->
+        <div class="col-lg-5 animate-in">
+            <div class="book-image-wrapper">
+                <img src="/static/{{ book['image'] }}" alt="{{ book['title'] }}" class="book-image">
+                <div class="image-glow"></div>
+            </div>
+        </div>
+
+        <!-- Book Info -->
+        <div class="col-lg-7 animate-in animate-delay-1">
+            <div class="book-info">
+                {% if book['category'] %}
+                <span class="badge badge-cyan mb-3">{{ book['category'] }}</span>
+                {% endif %}
+                <h1 class="book-detail-title">{{ book['title'] }}</h1>
+                <p class="book-detail-author">
+                    <i class="fas fa-pen-fancy text-cyan me-2"></i>by <span class="text-green">{{ book['author'] }}</span>
+                </p>
+
+                <hr class="divider">
+
+                <div class="book-detail-price">
+                    <span class="price-label">Price</span>
+                    <span class="price-value">${{ "%.2f"|format(book['price']) }}</span>
+                </div>
+
+                {% if book['description'] %}
+                <div class="book-description mt-3">
+                    <h6 class="text-cyan" style="font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="fas fa-align-left me-1"></i> Description
+                    </h6>
+                    <p class="text-secondary" style="line-height: 1.7;">{{ book['description'] }}</p>
+                </div>
+                {% endif %}
+
+                <div class="book-meta mt-3">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="meta-item">
+                                <span class="meta-label"><i class="fas fa-boxes me-1"></i> In Stock</span>
+                                <span class="meta-value {% if book['stock'] and book['stock'] < 5 %}text-red{% else %}text-green{% endif %}">
+                                    {{ book['stock'] }} units
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="meta-item">
+                                <span class="meta-label"><i class="fas fa-tag me-1"></i> Category</span>
+                                <span class="meta-value text-cyan">{{ book['category'] or 'General' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <!-- Add to Cart Form (K1: allows negative quantity) -->
+                <form action="/add_to_cart/{{ book['id'] }}" method="POST" class="add-to-cart-form">
+                    <div class="row align-items-end g-3">
+                        <div class="col-auto">
+                            <label class="form-label-cyber">Quantity</label>
+                            <input type="number" name="quantity" class="form-control form-control-cyber"
+                                   value="1" style="width: 100px;">
+                        </div>
+                        <div class="col">
+                            <button type="submit" class="btn btn-cyber-filled btn-lg w-100">
+                                <i class="fas fa-cart-plus me-2"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Reviews Section -->
+    <section class="reviews-section mt-5">
+        <h2 class="section-title"><i class="fas fa-comments me-2"></i>Reviews</h2>
+
+        {% if reviews %}
+        <div class="reviews-list">
+            {% for review in reviews %}
+            <div class="review-card cyber-card mb-3 animate-in" style="animation-delay: {{ loop.index * 0.1 }}s;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="reviewer-info">
+                        <i class="fas fa-user-secret text-cyan me-2"></i>
+                        <span class="reviewer-name">{{ review['username'] }}</span>
+                    </div>
+                    <div class="star-rating">
+                        {% for i in range(5) %}
+                            {% if i < review['rating'] %}
+                                <i class="fas fa-star filled"></i>
+                            {% else %}
+                                <i class="fas fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <!-- B2: Stored XSS via |safe on review comment -->
+                <div class="review-comment">{{ review['comment']|safe }}</div>
+                {% if review['created_at'] %}
+                <div class="review-date mt-2">
+                    <i class="fas fa-clock me-1"></i>{{ review['created_at'] }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="cyber-card text-center py-4 mb-4">
+            <i class="fas fa-comment-slash fa-2x text-muted mb-2" style="display:block;"></i>
+            <p class="text-muted mb-0" style="font-family: var(--font-mono); font-size: 0.85rem;">
+                No reviews yet. Be the first to drop a review!
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Add Review Form -->
+        {% if session.get('user_id') %}
+        <div class="add-review mt-4 animate-in">
+            <h4 class="text-green mb-3" style="font-family: var(--font-heading);">
+                <i class="fas fa-pen me-2"></i>Leave a Review
+            </h4>
+            <div class="cyber-card">
+                <form action="/review/{{ book['id'] }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label-cyber">Rating</label>
+                        <select name="rating" class="form-select form-select-cyber" required>
+                            <option value="" disabled selected>Select rating...</option>
+                            <option value="5">★★★★★ — Exceptional</option>
+                            <option value="4">★★★★☆ — Great</option>
+                            <option value="3">★★★☆☆ — Good</option>
+                            <option value="2">★★☆☆☆ — Fair</option>
+                            <option value="1">★☆☆☆☆ — Poor</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-cyber">Comment</label>
+                        <textarea name="comment" class="form-control form-control-cyber" rows="4"
+                                  placeholder="Share your thoughts on this book..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-cyber-filled">
+                        <i class="fas fa-paper-plane me-2"></i> Submit Review
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="cyber-card text-center py-3 mt-4">
+            <p class="mb-0" style="font-family: var(--font-mono); font-size: 0.85rem;">
+                <a href="/login" class="text-cyan">Login</a> to leave a review.
+            </p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+
+<style>
+    /* Breadcrumb */
+    .breadcrumb-cyber {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+    }
+
+    .breadcrumb-cyber a {
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .breadcrumb-cyber a:hover {
+        color: var(--green-primary) !important;
+    }
+
+    /* Book Image */
+    .book-image-wrapper {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--card-border);
+        background: var(--bg-secondary);
+    }
+
+    .book-image {
+        width: 100%;
+        height: auto;
+        display: block;
+        transition: transform 0.5s ease;
+    }
+
+    .book-image-wrapper:hover .book-image {
+        transform: scale(1.03);
+    }
+
+    .image-glow {
+        position: absolute;
+        bottom: 0;
+        left: 0; right: 0;
+        height: 100px;
+        background: linear-gradient(to top, var(--bg-primary), transparent);
+        pointer-events: none;
+    }
+
+    /* Book Info */
+    .book-detail-title {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        font-size: 2rem;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .book-detail-author {
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .book-detail-price {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .price-label {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .price-value {
+        font-family: var(--font-heading);
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--cyan-accent);
+        text-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Meta */
+    .meta-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    .meta-label {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .meta-value {
+        font-family: var(--font-heading);
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    /* Reviews */
+    .reviewer-name {
+        color: var(--green-primary);
+        font-family: var(--font-mono);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .review-comment {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.6;
+        padding-left: 1.6rem;
+    }
+
+    .review-date {
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        padding-left: 1.6rem;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="mb-4">
+        <h2 class="neon-green"><i class="fas fa-search me-2"></i>Search Results</h2>
+        {% if query %}
+        <p class="text-muted">Search results for: <span class="text-warning">{{ query|safe }}</span></p>
+        {% endif %}
+    </div>
+
+    <form action="{{ url_for('search_page') }}" method="GET" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control bg-dark text-light border-success" 
+                   placeholder="Search books..." value="{{ query }}">
+            <button class="btn btn-outline-success" type="submit">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </div>
+    </form>
+
+    {% if results %}
+    <div class="row g-4">
+        {% for book in results %}
+        <div class="col-md-4 col-sm-6">
+            <div class="card h-100" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);transition:all 0.3s ease;">
+                <img src="{{ url_for('static', filename=book['image']) }}" class="card-img-top" alt="{{ book['title'] }}" 
+                     style="height:200px;object-fit:cover;border-bottom:1px solid rgba(0,255,65,0.2);">
+                <div class="card-body">
+                    <span class="badge bg-secondary mb-2">{{ book['category'] }}</span>
+                    <h5 class="card-title" style="color:#00ff41;">{{ book['title'] }}</h5>
+                    <p class="card-text text-muted">by {{ book['author'] }}</p>
+                    <p class="card-text" style="color:#00d4ff;font-size:1.2rem;font-weight:700;">${{ "%.2f"|format(book['price']) }}</p>
+                </div>
+                <div class="card-footer bg-transparent border-0 d-flex gap-2">
+                    <a href="{{ url_for('book_details', id=book['id']) }}" class="btn btn-sm btn-outline-info flex-fill">
+                        <i class="fas fa-info-circle"></i> Details
+                    </a>
+                    {% if session.get('user_id') %}
+                    <form action="{{ url_for('add_to_cart', book_id=book['id']) }}" method="POST" class="flex-fill">
+                        <button type="submit" class="btn btn-sm btn-outline-success w-100">
+                            <i class="fas fa-cart-plus"></i> Add
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-search fa-3x mb-3" style="color:rgba(0,255,65,0.3);"></i>
+        <p class="text-muted">No results found{% if query %} for "{{ query }}"{% endif %}.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

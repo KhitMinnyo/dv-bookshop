@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h3 class="mb-0" style="color:#00ff41;">
+                        <i class="fas fa-globe me-2"></i>URL Preview
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('admin_preview_url') }}" method="POST" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" name="url" class="form-control bg-dark text-light border-secondary" 
+                                   placeholder="Enter URL to preview (e.g., http://example.com)" required>
+                            <button type="submit" class="btn btn-outline-info">
+                                <i class="fas fa-eye me-1"></i>Preview
+                            </button>
+                        </div>
+                        <small class="text-muted">Fetch and preview content from any URL</small>
+                    </form>
+
+                    {% if content is not none %}
+                    <div class="mt-3">
+                        <h5 style="color:#00d4ff;"><i class="fas fa-code me-2"></i>Response:</h5>
+                        <pre class="p-3 rounded" style="background:#000;color:#c0c0c0;border:1px solid rgba(0,255,65,0.3);max-height:500px;overflow:auto;font-size:0.8rem;word-wrap:break-word;white-space:pre-wrap;">{{ content }}</pre>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

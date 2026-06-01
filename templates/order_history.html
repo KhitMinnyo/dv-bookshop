@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <h2 class="neon-green mb-4"><i class="fas fa-history me-2"></i>Order History</h2>
+
+    {% if orders %}
+    <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+        <div class="card-body p-0">
+            <table class="table table-dark table-hover mb-0">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                        <th style="color:#00ff41;">Order #</th>
+                        <th style="color:#00ff41;">Date</th>
+                        <th style="color:#00ff41;">Total</th>
+                        <th style="color:#00ff41;">Status</th>
+                        <th style="color:#00ff41;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr style="border-bottom:1px solid rgba(0,255,65,0.1);">
+                        <td>#{{ order['id'] }}</td>
+                        <td>{{ order['created_at'] }}</td>
+                        <td style="color:#00d4ff;">${{ "%.2f"|format(order['total']) }}</td>
+                        <td>
+                            {% if order['status'] == 'confirmed' %}
+                            <span class="badge bg-success">Confirmed</span>
+                            {% elif order['status'] == 'pending' %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ order['status'] }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('order_detail', order_id=order['id']) }}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('download_receipt', order_id=order['id']) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-box-open fa-3x mb-3" style="color:rgba(0,255,65,0.3);"></i>
+        <p class="text-muted">No orders yet.</p>
+        <a href="{{ url_for('books') }}" class="btn btn-outline-success">Start Shopping</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

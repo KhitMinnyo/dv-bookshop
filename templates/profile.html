@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile — Khit's Bookshop{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <h1 class="section-title mb-4"><i class="fas fa-user-secret me-2"></i>Agent Profile</h1>
+
+    <div class="row g-4">
+        <!-- Left Column: User Info -->
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="cyber-card profile-main-card mb-4 animate-in">
+                <div class="text-center">
+                    <!-- Profile Picture (B5: XSS via filename with |safe) -->
+                    <div class="profile-pic-wrapper mb-3">
+                        {% if user['profile_pic'] %}
+                            <img src="/static/uploads/{{ user['profile_pic'] }}" alt="Profile" class="profile-pic">
+                            <div class="profile-pic-name">{{ user['profile_pic']|safe }}</div>
+                        {% else %}
+                            <div class="profile-pic-placeholder">
+                                <i class="fas fa-user-secret"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <h3 class="profile-username">{{ user['username'] }}</h3>
+                    <p class="profile-email"><i class="fas fa-envelope me-1"></i> {{ user['email'] }}</p>
+
+                    <!-- Role Badge -->
+                    <span class="badge {% if user['role'] == 'admin' %}badge-admin{% else %}badge-cyber{% endif %} mb-3">
+                        <i class="fas {% if user['role'] == 'admin' %}fa-shield-alt{% else %}fa-user{% endif %} me-1"></i>
+                        {{ user['role']|upper }}
+                    </span>
+
+                    <!-- Balance -->
+                    <div class="balance-display">
+                        <span class="balance-label">Account Balance</span>
+                        <span class="balance-value">${{ "%.2f"|format(user['balance']) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="cyber-card animate-in animate-delay-1">
+                <h6 class="text-cyan mb-3" style="font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                    <i class="fas fa-bolt me-1"></i> Quick Actions
+                </h6>
+                <div class="d-grid gap-2">
+                    <a href="/edit_profile" class="btn btn-cyber btn-sm">
+                        <i class="fas fa-edit me-2"></i> Edit Profile
+                    </a>
+                    <a href="/order_history" class="btn btn-cyber btn-sm">
+                        <i class="fas fa-history me-2"></i> Order History
+                    </a>
+                    <a href="/transfer" class="btn btn-cyber btn-cyan-cyber btn-sm">
+                        <i class="fas fa-exchange-alt me-2"></i> Transfer Balance
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Details -->
+        <div class="col-lg-8">
+            <!-- J1: Credit Card Section — FULL card number exposed -->
+            <div class="cyber-card mb-4 animate-in animate-delay-1">
+                <h5 class="card-section-title">
+                    <i class="fas fa-credit-card me-2 text-cyan"></i>Payment Information
+                </h5>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <div class="info-field">
+                            <span class="info-label">Card Number</span>
+                            <span class="info-value card-number-display">
+                                <i class="fas fa-credit-card me-2 text-cyan"></i>{{ user['credit_card_number'] }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-field">
+                            <span class="info-label">Expiry</span>
+                            <span class="info-value">{{ user['credit_card_expiry'] }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-field">
+                            <span class="info-label">CVV</span>
+                            <span class="info-value">•••</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bio Section (B4: Stored XSS via |safe) -->
+            <div class="cyber-card mb-4 animate-in animate-delay-2">
+                <h5 class="card-section-title">
+                    <i class="fas fa-terminal me-2 text-green"></i>Bio
+                </h5>
+                <div class="bio-content mt-2">
+                    {% if user['bio'] %}
+                        {{ user['bio']|safe }}
+                    {% else %}
+                        <p class="text-muted" style="font-family: var(--font-mono); font-size: 0.85rem;">
+                            <i class="fas fa-ghost me-1"></i> No bio set. Edit your profile to add one.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="cyber-card animate-in animate-delay-3">
+                <h5 class="card-section-title">
+                    <i class="fas fa-receipt me-2 text-cyan"></i>Recent Orders
+                </h5>
+
+                {% if orders %}
+                <div class="table-responsive mt-3">
+                    <table class="table table-cyber">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td class="text-green">#{{ order['id'] }}</td>
+                                <td>{{ order['created_at'] if order['created_at'] else 'N/A' }}</td>
+                                <td class="text-cyan">${{ "%.2f"|format(order['total_price']) if order['total_price'] else '0.00' }}</td>
+                                <td>
+                                    <span class="badge badge-cyber">
+                                        {{ order['status'] if order['status'] else 'completed' }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-shopping-bag fa-2x text-muted mb-2" style="display:block;"></i>
+                    <p class="text-muted mb-0" style="font-family: var(--font-mono); font-size: 0.85rem;">
+                        No orders yet. Start browsing our <a href="/books" class="text-cyan">collection</a>!
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Profile Picture */
+    .profile-pic-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .profile-pic {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--green-primary);
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+    }
+
+    .profile-pic-name {
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.3rem;
+        word-break: break-all;
+    }
+
+    .profile-pic-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--bg-tertiary);
+        border: 3px solid var(--card-border);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: var(--text-muted);
+    }
+
+    /* Username & Info */
+    .profile-username {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        font-size: 1.4rem;
+        color: var(--green-primary);
+        text-shadow: 0 0 10px var(--green-glow);
+    }
+
+    .profile-email {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 0.8rem;
+    }
+
+    /* Balance */
+    .balance-display {
+        background: var(--bg-secondary);
+        border: 1px solid var(--card-border);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+
+    .balance-label {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.3rem;
+    }
+
+    .balance-value {
+        font-family: var(--font-heading);
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--cyan-accent);
+        text-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+    }
+
+    /* Card Section Titles */
+    .card-section-title {
+        font-family: var(--font-heading);
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--text-primary);
+        padding-bottom: 0.8rem;
+        border-bottom: 1px solid var(--card-border);
+    }
+
+    /* Info Fields */
+    .info-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .info-label {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .info-value {
+        font-family: var(--font-mono);
+        font-size: 0.95rem;
+        color: var(--text-primary);
+    }
+
+    .card-number-display {
+        background: var(--bg-secondary);
+        padding: 0.5rem 0.8rem;
+        border-radius: 6px;
+        border: 1px solid var(--card-border);
+        letter-spacing: 2px;
+    }
+
+    /* Bio */
+    .bio-content {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        line-height: 1.7;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="neon-green mb-0"><i class="fas fa-headset me-2"></i>Support Tickets</h2>
+        <a href="{{ url_for('new_ticket') }}" class="btn btn-outline-success">
+            <i class="fas fa-plus me-1"></i>New Ticket
+        </a>
+    </div>
+
+    {% if tickets %}
+    <div class="row g-3">
+        {% for ticket in tickets %}
+        <div class="col-12">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 style="color:#00d4ff;">{{ ticket['subject'] }}</h5>
+                            <p class="text-muted mb-2">{{ ticket['message'] }}</p>
+                            <small class="text-muted">{{ ticket['created_at'] }}</small>
+                        </div>
+                        <div>
+                            {% if ticket['status'] == 'open' %}
+                            <span class="badge" style="background:rgba(0,255,65,0.2);color:#00ff41;border:1px solid rgba(0,255,65,0.3);">Open</span>
+                            {% else %}
+                            <span class="badge" style="background:rgba(0,212,255,0.2);color:#00d4ff;border:1px solid rgba(0,212,255,0.3);">Closed</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if ticket['admin_reply'] %}
+                    <div class="mt-3 p-3 rounded" style="background:rgba(0,212,255,0.05);border-left:3px solid #00d4ff;">
+                        <small class="text-muted d-block mb-1"><i class="fas fa-reply me-1"></i>Admin Reply:</small>
+                        <p class="mb-0">{{ ticket['admin_reply'] }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-ticket-alt fa-3x mb-3" style="color:rgba(0,255,65,0.3);"></i>
+        <p class="text-muted">No support tickets yet.</p>
+        <a href="{{ url_for('new_ticket') }}" class="btn btn-outline-success">Create Your First Ticket</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

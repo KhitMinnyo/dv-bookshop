@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}Cart — Khit's Bookshop{% endblock %}
+
+{% block content %}
+<div class="cart-page">
+    <h1 class="section-title mb-4"><i class="fas fa-shopping-cart me-2"></i>Your Cart</h1>
+
+    {% if cart_items %}
+    <div class="row g-4">
+        <!-- Cart Items Table -->
+        <div class="col-lg-8">
+            <div class="cyber-card animate-in">
+                <div class="table-responsive">
+                    <table class="table table-cyber mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Image</th>
+                                <th>Product</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Subtotal</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr class="cart-item animate-in" style="animation-delay: {{ loop.index * 0.08 }}s;">
+                                <td>
+                                    <div class="cart-item-img">
+                                        <img src="/static/{{ item['image'] }}" alt="{{ item['title'] }}">
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="cart-item-info">
+                                        <span class="cart-item-title">{{ item['title'] }}</span>
+                                        <span class="cart-item-author">{{ item['author'] }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="cart-item-qty">{{ item['quantity'] }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-cyan">${{ "%.2f"|format(item['price']) }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <span class="text-green glow-green">${{ "%.2f"|format(item['price'] * item['quantity']) }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <form action="/remove_from_cart/{{ item['id'] }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn btn-cyber btn-danger-cyber btn-sm" title="Remove">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Continue Shopping -->
+            <div class="mt-3">
+                <a href="/books" class="btn btn-cyber btn-sm">
+                    <i class="fas fa-arrow-left me-2"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="cyber-card order-summary animate-in animate-delay-2">
+                <h5 class="card-section-title mb-3">
+                    <i class="fas fa-receipt me-2 text-cyan"></i>Order Summary
+                </h5>
+
+                <div class="summary-row">
+                    <span>Items ({{ cart_items|length }})</span>
+                    <span class="text-cyan">${{ "%.2f"|format(total) }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Shipping</span>
+                    <span class="text-green">FREE</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax</span>
+                    <span class="text-muted">$0.00</span>
+                </div>
+
+                <hr class="divider">
+
+                <div class="summary-row total-row">
+                    <span>Total</span>
+                    <span class="total-value">${{ "%.2f"|format(total) }}</span>
+                </div>
+
+                <a href="/checkout" class="btn btn-cyber-filled w-100 mt-4">
+                    <i class="fas fa-lock me-2"></i> Proceed to Checkout
+                </a>
+
+                <!-- Security note decoration -->
+                <div class="security-note mt-3">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Encrypted transaction guaranteed
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty Cart -->
+    <div class="empty-cart text-center py-5 animate-in">
+        <div class="empty-cart-icon mb-4">
+            <i class="fas fa-cart-arrow-down"></i>
+        </div>
+        <h3 class="text-muted" style="font-family: var(--font-heading);">Your cart is empty</h3>
+        <p class="text-muted" style="font-family: var(--font-mono); font-size: 0.85rem;">
+            Looks like you haven't added anything to your cart yet.
+        </p>
+        <a href="/books" class="btn btn-cyber-filled mt-3">
+            <i class="fas fa-book me-2"></i> Browse Books
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Cart Item Image */
+    .cart-item-img {
+        width: 60px;
+        height: 75px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid var(--card-border);
+        background: var(--bg-secondary);
+    }
+
+    .cart-item-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Cart Item Info */
+    .cart-item-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cart-item-title {
+        color: var(--green-primary);
+        font-family: var(--font-heading);
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .cart-item-author {
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+    }
+
+    .cart-item-qty {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-secondary);
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        padding: 0.3rem 0.8rem;
+        font-family: var(--font-mono);
+        color: var(--text-primary);
+        min-width: 40px;
+    }
+
+    /* Order Summary */
+    .card-section-title {
+        font-family: var(--font-heading);
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--text-primary);
+        padding-bottom: 0.8rem;
+        border-bottom: 1px solid var(--card-border);
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .total-row {
+        font-size: 1rem;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .total-value {
+        font-family: var(--font-heading);
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--cyan-accent);
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    }
+
+    .security-note {
+        text-align: center;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+
+    .security-note i {
+        color: var(--green-primary);
+    }
+
+    /* Empty Cart */
+    .empty-cart-icon {
+        font-size: 4rem;
+        color: var(--text-muted);
+        opacity: 0.4;
+        animation: emptyFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes emptyFloat {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+</style>
+{% endblock %}

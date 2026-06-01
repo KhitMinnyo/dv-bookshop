@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+    <h2 class="neon-green mb-4"><i class="fas fa-headset me-2"></i>Support Tickets (Admin)</h2>
+
+    {% if tickets %}
+    <div class="row g-3">
+        {% for ticket in tickets %}
+        <div class="col-12">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 style="color:#00d4ff;">#{{ ticket['id'] }} — {{ ticket['subject'] }}</h5>
+                            <small class="text-muted">By <span style="color:#00ff41;">{{ ticket['username'] }}</span> · {{ ticket['created_at'] }}</small>
+                        </div>
+                        {% if ticket['status'] == 'open' %}
+                        <span class="badge" style="background:rgba(0,255,65,0.2);color:#00ff41;border:1px solid rgba(0,255,65,0.3);">Open</span>
+                        {% else %}
+                        <span class="badge" style="background:rgba(0,212,255,0.2);color:#00d4ff;border:1px solid rgba(0,212,255,0.3);">Closed</span>
+                        {% endif %}
+                    </div>
+                    <p class="mb-3">{{ ticket['message'] }}</p>
+
+                    {% if ticket['admin_reply'] %}
+                    <div class="p-3 rounded mb-3" style="background:rgba(0,212,255,0.05);border-left:3px solid #00d4ff;">
+                        <small class="text-muted"><i class="fas fa-reply me-1"></i>Your Reply:</small>
+                        <p class="mb-0 mt-1">{{ ticket['admin_reply'] }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if ticket['status'] == 'open' %}
+                    <form action="{{ url_for('admin_reply_ticket', ticket_id=ticket['id']) }}" method="POST">
+                        <div class="input-group">
+                            <textarea name="reply" rows="2" class="form-control bg-dark text-light border-secondary" 
+                                      placeholder="Type your reply..." required></textarea>
+                            <button type="submit" class="btn btn-outline-success">
+                                <i class="fas fa-reply"></i>
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-check-circle fa-3x mb-3" style="color:rgba(0,255,65,0.3);"></i>
+        <p class="text-muted">No support tickets.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

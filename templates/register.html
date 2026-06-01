@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Register — Khit's Bookshop{% endblock %}
+
+{% block content %}
+<div class="register-page">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-5">
+            <div class="register-card cyber-card animate-in">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <div class="register-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <h2 class="register-title">Create Account</h2>
+                    <p class="register-subtitle">Join the underground network</p>
+                    <div class="bonus-badge animate-in animate-delay-1">
+                        <i class="fas fa-gift me-1"></i> New users get <span class="text-green">$1,000</span> initial balance!
+                    </div>
+                </div>
+
+                <!-- Registration Form -->
+                <form action="/register" method="POST">
+                    <!-- Account Info -->
+                    <div class="form-section">
+                        <h6 class="form-section-title">
+                            <i class="fas fa-id-card me-1"></i> Account Information
+                        </h6>
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label-cyber">Username</label>
+                            <input type="text" name="username" id="username"
+                                   class="form-control form-control-cyber"
+                                   placeholder="Choose a username" required autocomplete="username">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label-cyber">Email</label>
+                            <input type="email" name="email" id="email"
+                                   class="form-control form-control-cyber"
+                                   placeholder="hacker@darknet.io" required autocomplete="email">
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="password" class="form-label-cyber">Password</label>
+                                <input type="password" name="password" id="password"
+                                       class="form-control form-control-cyber"
+                                       placeholder="••••••••" required autocomplete="new-password">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="confirm_password" class="form-label-cyber">Confirm Password</label>
+                                <input type="password" name="confirm_password" id="confirm_password"
+                                       class="form-control form-control-cyber"
+                                       placeholder="••••••••" required autocomplete="new-password">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="divider">
+
+                    <!-- Credit Card Info -->
+                    <div class="form-section">
+                        <h6 class="form-section-title">
+                            <i class="fas fa-credit-card me-1"></i> Payment Information
+                        </h6>
+
+                        <div class="mb-3">
+                            <label for="credit_card_number" class="form-label-cyber">Card Number</label>
+                            <input type="text" name="credit_card_number" id="credit_card_number"
+                                   class="form-control form-control-cyber"
+                                   placeholder="1234-5678-9012-3456"
+                                   pattern="\d{4}-\d{4}-\d{4}-\d{4}"
+                                   title="Format: 1234-5678-9012-3456" required>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="credit_card_expiry" class="form-label-cyber">Expiry Date</label>
+                                <input type="text" name="credit_card_expiry" id="credit_card_expiry"
+                                       class="form-control form-control-cyber"
+                                       placeholder="MM/YY"
+                                       pattern="\d{2}/\d{2}"
+                                       title="Format: MM/YY" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="credit_card_cvv" class="form-label-cyber">CVV</label>
+                                <input type="text" name="credit_card_cvv" id="credit_card_cvv"
+                                       class="form-control form-control-cyber"
+                                       placeholder="•••"
+                                       pattern="\d{3}"
+                                       title="3-digit CVV" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-cyber-filled w-100 mt-3 mb-3">
+                        <i class="fas fa-rocket me-2"></i> Create Account
+                    </button>
+                </form>
+
+                <hr class="divider">
+
+                <!-- Link to Login -->
+                <div class="text-center">
+                    <p class="auth-link mb-0">
+                        Already have an account?
+                        <a href="/login" class="text-cyan">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Terminal decoration -->
+            <div class="terminal-decor animate-in animate-delay-2">
+                <span class="terminal-line">> initializing new identity...</span>
+                <span class="terminal-line blink">_</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .register-page {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+    }
+
+    .register-card {
+        padding: 2.5rem;
+    }
+
+    .register-icon {
+        font-size: 2.5rem;
+        color: var(--cyan-accent);
+        margin-bottom: 1rem;
+        text-shadow: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.2);
+    }
+
+    .register-title {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        font-size: 1.6rem;
+        color: var(--text-primary);
+    }
+
+    .register-subtitle {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 0.8rem;
+    }
+
+    .bonus-badge {
+        display: inline-block;
+        background: rgba(0, 255, 65, 0.1);
+        border: 1px solid var(--card-border);
+        color: var(--text-secondary);
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        animation: pulse-border 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-border {
+        0%, 100% { border-color: var(--card-border); }
+        50% { border-color: var(--green-primary); box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
+    }
+
+    .form-section {
+        margin-bottom: 0.5rem;
+    }
+
+    .form-section-title {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--cyan-accent);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(0, 212, 255, 0.15);
+    }
+
+    .auth-link {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .auth-link a {
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .auth-link a:hover {
+        text-shadow: 0 0 8px currentColor;
+    }
+
+    /* Terminal decoration */
+    .terminal-decor {
+        text-align: center;
+        margin-top: 1.5rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .terminal-line { display: inline; }
+
+    .blink {
+        animation: blink-cursor 1s step-end infinite;
+        color: var(--green-primary);
+    }
+
+    @keyframes blink-cursor {
+        50% { opacity: 0; }
+    }
+</style>
+{% endblock %}

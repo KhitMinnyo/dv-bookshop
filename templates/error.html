@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <span class="glitch-text" style="font-size:6rem;font-weight:900;font-family:monospace;display:inline-block;">
+                {{ error_code }}
+            </span>
+        </div>
+        <h2 class="mb-3" style="color:#ff0055;">{{ error_message }}</h2>
+        <p class="text-muted mb-4">Something went wrong. The system has logged this incident.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{{ url_for('index') }}" class="btn btn-outline-success">
+                <i class="fas fa-home me-1"></i>Go Home
+            </a>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Go Back
+            </a>
+        </div>
+        <div class="mt-5 p-3 d-inline-block rounded" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+            <code style="color:#00ff41;font-size:0.8rem;">
+                > ERROR {{ error_code }}: {{ error_message }}<br>
+                > STACK_TRACE: [REDACTED]<br>
+                > TIMESTAMP: {{ "now"|string }}<br>
+                > STATUS: INVESTIGATING_
+            </code>
+        </div>
+    </div>
+</div>
+{% endblock %}

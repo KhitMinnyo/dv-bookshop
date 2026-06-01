@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Khit's Bookshop{% endblock %}</title>
+    <!-- Bootstrap 5.1.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6.0.0 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== ROOT VARIABLES ===== */
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --green-primary: #00ff41;
+            --green-dim: rgba(0, 255, 65, 0.6);
+            --green-glow: rgba(0, 255, 65, 0.15);
+            --cyan-accent: #00d4ff;
+            --red-accent: #ff0055;
+            --text-primary: #e0e0e0;
+            --text-secondary: #c0c0c0;
+            --text-muted: #808080;
+            --card-bg: rgba(0, 255, 65, 0.05);
+            --card-border: rgba(0, 255, 65, 0.2);
+            --card-hover-border: rgba(0, 255, 65, 0.5);
+            --glass-bg: rgba(17, 17, 17, 0.8);
+            --font-mono: 'Share Tech Mono', monospace;
+            --font-heading: 'Rajdhani', sans-serif;
+        }
+
+        /* ===== GLOBAL RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-heading);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Subtle scanline overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 65, 0.015) 2px,
+                rgba(0, 255, 65, 0.015) 4px
+            );
+            pointer-events: none !important;
+            z-index: 1;
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb {
+            background: var(--green-primary);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--cyan-accent);
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--card-border);
+            padding: 0.8rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-brand {
+            font-family: var(--font-mono);
+            color: var(--green-primary) !important;
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px var(--green-glow), 0 0 20px var(--green-glow);
+            letter-spacing: 1px;
+            transition: text-shadow 0.3s ease;
+        }
+
+        .navbar-brand:hover {
+            text-shadow: 0 0 15px var(--green-primary), 0 0 30px var(--green-primary), 0 0 45px var(--green-primary);
+        }
+
+        .navbar-brand .fa-skull {
+            margin-right: 8px;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.8; text-shadow: 0 0 5px var(--green-primary); }
+            50% { opacity: 1; text-shadow: 0 0 20px var(--green-primary), 0 0 40px var(--green-primary); }
+        }
+
+        .nav-link {
+            color: var(--text-secondary) !important;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 1rem !important;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: var(--green-primary);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+            box-shadow: 0 0 8px var(--green-primary);
+        }
+
+        .nav-link:hover {
+            color: var(--green-primary) !important;
+            text-shadow: 0 0 8px var(--green-glow);
+        }
+
+        .nav-link:hover::after {
+            width: 80%;
+        }
+
+        .nav-link .fa-shopping-cart { color: var(--cyan-accent); }
+
+        .badge-cart {
+            background: var(--red-accent) !important;
+            font-size: 0.65rem;
+            padding: 3px 6px;
+            border-radius: 10px;
+            position: relative;
+            top: -8px;
+            left: -5px;
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.5);
+            animation: badge-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes badge-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .dropdown-menu {
+            background: var(--bg-secondary);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .dropdown-item {
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            padding: 0.5rem 1.2rem;
+        }
+
+        .dropdown-item:hover {
+            background: rgba(0, 255, 65, 0.1);
+            color: var(--green-primary);
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            margin-right: 8px;
+            color: var(--cyan-accent);
+        }
+
+        .navbar-toggler {
+            border-color: var(--card-border);
+            padding: 0.4rem 0.6rem;
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%2300ff41' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        /* ===== GREETING BANNER ===== */
+        #greeting-banner {
+            text-align: center;
+            font-family: var(--font-mono);
+            color: var(--cyan-accent);
+            padding: 0.5rem;
+            min-height: 1px;
+        }
+
+        /* ===== FLASH MESSAGES ===== */
+        .flash-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .alert-flash {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            margin-bottom: 0.5rem;
+            animation: slideIn 0.4s ease-out;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .alert-flash.alert-success {
+            border-left: 4px solid var(--green-primary);
+        }
+
+        .alert-flash.alert-danger {
+            border-left: 4px solid var(--red-accent);
+        }
+
+        .alert-flash.alert-warning {
+            border-left: 4px solid #ffaa00;
+        }
+
+        .alert-flash.alert-info {
+            border-left: 4px solid var(--cyan-accent);
+        }
+
+        .alert-flash .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            flex: 1;
+            padding-top: 1rem;
+            padding-bottom: 3rem;
+        }
+
+        /* ===== CARDS ===== */
+        .cyber-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 255, 65, 0.03) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .cyber-card:hover {
+            border-color: var(--card-hover-border);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 255, 65, 0.1), 0 0 1px var(--green-primary);
+        }
+
+        .cyber-card:hover::before {
+            opacity: 1;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn-cyber {
+            background: transparent;
+            border: 1px solid var(--green-primary);
+            color: var(--green-primary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.6rem 1.5rem;
+            border-radius: 6px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-cyber::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-cyber:hover {
+            background: rgba(0, 255, 65, 0.15);
+            color: var(--green-primary);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 15px rgba(0, 255, 65, 0.1);
+            text-shadow: 0 0 5px var(--green-primary);
+        }
+
+        .btn-cyber:hover::before {
+            left: 100%;
+        }
+
+        .btn-cyber-filled {
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.2), rgba(0, 212, 255, 0.1));
+            border: 1px solid var(--green-primary);
+            color: var(--green-primary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.6rem 1.5rem;
+            border-radius: 6px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cyber-filled:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.35), rgba(0, 212, 255, 0.2));
+            color: #fff;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger-cyber {
+            border-color: var(--red-accent);
+            color: var(--red-accent);
+        }
+
+        .btn-danger-cyber:hover {
+            background: rgba(255, 0, 85, 0.15);
+            color: var(--red-accent);
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.3);
+        }
+
+        .btn-cyan-cyber {
+            border-color: var(--cyan-accent);
+            color: var(--cyan-accent);
+        }
+
+        .btn-cyan-cyber:hover {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyan-accent);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        /* ===== FORM INPUTS ===== */
+        .form-control-cyber {
+            background: var(--bg-secondary);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            padding: 0.7rem 1rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control-cyber:focus {
+            background: var(--bg-tertiary);
+            border-color: var(--green-primary);
+            color: var(--green-primary);
+            box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.1), 0 0 15px rgba(0, 255, 65, 0.1);
+            outline: none;
+        }
+
+        .form-control-cyber::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-label-cyber {
+            color: var(--cyan-accent);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-select-cyber {
+            background: var(--bg-secondary);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            padding: 0.7rem 1rem;
+            border-radius: 6px;
+        }
+
+        .form-select-cyber:focus {
+            border-color: var(--green-primary);
+            box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.1);
+        }
+
+        /* ===== BOOK CARDS ===== */
+        .book-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .book-card:hover {
+            border-color: var(--card-hover-border);
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0, 255, 65, 0.12);
+        }
+
+        .book-card .card-img-wrapper {
+            position: relative;
+            overflow: hidden;
+            height: 220px;
+            background: var(--bg-secondary);
+        }
+
+        .book-card .card-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease, filter 0.3s ease;
+        }
+
+        .book-card:hover .card-img-wrapper img {
+            transform: scale(1.08);
+            filter: brightness(1.1);
+        }
+
+        .book-card .card-img-wrapper .overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.8));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .book-card:hover .card-img-wrapper .overlay {
+            opacity: 1;
+        }
+
+        .book-card .card-body {
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .book-card .book-title {
+            color: var(--green-primary);
+            font-family: var(--font-heading);
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .book-card .book-author {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .book-card .book-price {
+            color: var(--cyan-accent);
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: auto;
+            margin-bottom: 0.8rem;
+            text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+        }
+
+        /* ===== TABLE ===== */
+        .table-cyber {
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        .table-cyber thead th {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--green-primary);
+            color: var(--green-primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.75rem;
+            padding: 1rem;
+        }
+
+        .table-cyber tbody td {
+            border-bottom: 1px solid rgba(0, 255, 65, 0.1);
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        .table-cyber tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .table-cyber tbody tr:hover {
+            background: rgba(0, 255, 65, 0.05);
+        }
+
+        /* ===== SECTION TITLES ===== */
+        .section-title {
+            color: var(--green-primary);
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--green-primary), var(--cyan-accent));
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--green-primary);
+        }
+
+        /* ===== BADGES ===== */
+        .badge-cyber {
+            background: rgba(0, 255, 65, 0.15);
+            color: var(--green-primary);
+            border: 1px solid var(--card-border);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            letter-spacing: 1px;
+        }
+
+        .badge-admin {
+            background: rgba(255, 0, 85, 0.15);
+            color: var(--red-accent);
+            border: 1px solid rgba(255, 0, 85, 0.3);
+        }
+
+        .badge-cyan {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyan-accent);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--card-border);
+            padding: 1.5rem 0;
+            margin-top: auto;
+        }
+
+        .footer p {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+
+        .footer .fa-skull {
+            color: var(--green-primary);
+            margin: 0 5px;
+        }
+
+        /* ===== STAR RATINGS ===== */
+        .star-rating .fa-star {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .star-rating .fa-star.filled {
+            color: #ffaa00;
+            text-shadow: 0 0 5px rgba(255, 170, 0, 0.4);
+        }
+
+        /* ===== UTILITY ===== */
+        .text-green { color: var(--green-primary); }
+        .text-cyan { color: var(--cyan-accent); }
+        .text-red { color: var(--red-accent); }
+        .glow-green { text-shadow: 0 0 10px var(--green-glow); }
+        .glow-cyan { text-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+
+        .divider {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--card-border), transparent);
+            margin: 1.5rem 0;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .animate-delay-1 { animation-delay: 0.1s; }
+        .animate-delay-2 { animation-delay: 0.2s; }
+        .animate-delay-3 { animation-delay: 0.3s; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .navbar-brand { font-size: 1.1rem; }
+            .section-title { font-size: 1.4rem; }
+            .book-card .card-img-wrapper { height: 180px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-skull"></i> Khit's Bookshop
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-home me-1"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/books"><i class="fas fa-book me-1"></i> Books</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/books"><i class="fas fa-search me-1"></i> Search</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if session.get('user_id') %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/cart">
+                                <i class="fas fa-shopping-cart"></i> Cart
+                                {% if cart_count and cart_count > 0 %}
+                                    <span class="badge badge-cart">{{ cart_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/profile"><i class="fas fa-user-secret me-1"></i> Profile</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/transfer"><i class="fas fa-exchange-alt me-1"></i> Transfer</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/support"><i class="fas fa-headset me-1"></i> Support</a>
+                        </li>
+
+                        {% if session.get('role') == 'admin' %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-shield-alt me-1"></i> Admin
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                                <li><a class="dropdown-item" href="/admin"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                                <li><a class="dropdown-item" href="/admin/users"><i class="fas fa-users"></i> Users</a></li>
+                                <li><a class="dropdown-item" href="/admin/logs"><i class="fas fa-file-alt"></i> Logs</a></li>
+                                <li><hr class="dropdown-divider" style="border-color: var(--card-border);"></li>
+                                <li><a class="dropdown-item" href="/admin/server_tools"><i class="fas fa-terminal"></i> Server Tools</a></li>
+                                <li><a class="dropdown-item" href="/admin/url_preview"><i class="fas fa-globe"></i> URL Preview</a></li>
+                                <li><a class="dropdown-item" href="/admin/tickets"><i class="fas fa-ticket-alt"></i> Tickets</a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <li class="nav-item">
+                            <a class="nav-link text-red" href="/logout"><i class="fas fa-sign-out-alt me-1"></i> Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login"><i class="fas fa-sign-in-alt me-1"></i> Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-cyan" href="/register"><i class="fas fa-user-plus me-1"></i> Register</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-flash alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% elif category == 'danger' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% elif category == 'warning' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Greeting Banner (B3 DOM XSS) -->
+    <div id="greeting-banner"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container text-center">
+            <p>&copy; 2026 Khit's Bookshop <i class="fas fa-skull"></i> All rights reserved. | Built for hackers, by hackers.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5.1.3 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- B3 — DOM XSS: Greeting feature -->
+    <script>
+    // Greeting feature
+    if (window.location.hash) {
+        var greeting = decodeURIComponent(window.location.hash.substring(1));
+        var el = document.getElementById('greeting-banner');
+        if (el) { el.innerHTML = greeting; }
+    }
+    </script>
+</body>
+</html>

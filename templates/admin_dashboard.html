@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid py-4 px-4">
+    <h2 class="neon-green mb-4"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h2>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md col-sm-6">
+            <div class="stat-card text-center">
+                <div class="stat-value">{{ stats['total_users'] }}</div>
+                <div class="stat-label"><i class="fas fa-users me-1"></i>Users</div>
+            </div>
+        </div>
+        <div class="col-md col-sm-6">
+            <div class="stat-card text-center">
+                <div class="stat-value" style="color:#00d4ff;">{{ stats['total_books'] }}</div>
+                <div class="stat-label"><i class="fas fa-book me-1"></i>Books</div>
+            </div>
+        </div>
+        <div class="col-md col-sm-6">
+            <div class="stat-card text-center">
+                <div class="stat-value" style="color:#ffaa00;">{{ stats['total_orders'] }}</div>
+                <div class="stat-label"><i class="fas fa-shopping-bag me-1"></i>Orders</div>
+            </div>
+        </div>
+        <div class="col-md col-sm-6">
+            <div class="stat-card text-center">
+                <div class="stat-value" style="color:#00ff41;">${{ "%.2f"|format(stats['total_revenue']) }}</div>
+                <div class="stat-label"><i class="fas fa-dollar-sign me-1"></i>Revenue</div>
+            </div>
+        </div>
+        <div class="col-md col-sm-6">
+            <div class="stat-card text-center">
+                <div class="stat-value" style="color:#ff0055;">{{ stats['open_tickets'] }}</div>
+                <div class="stat-label"><i class="fas fa-ticket-alt me-1"></i>Open Tickets</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Orders -->
+        <div class="col-lg-7">
+            <div class="card" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header d-flex justify-content-between align-items-center" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;">Recent Orders</h5>
+                    <a href="{{ url_for('admin_export', format='csv') }}" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-download me-1"></i>Export CSV
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead><tr style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                            <th style="color:#00ff41;">ID</th><th style="color:#00ff41;">User</th>
+                            <th style="color:#00ff41;">Total</th><th style="color:#00ff41;">Status</th>
+                            <th style="color:#00ff41;">Date</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr style="border-bottom:1px solid rgba(0,255,65,0.1);">
+                                <td>#{{ order['id'] }}</td>
+                                <td>{{ order['user_id'] }}</td>
+                                <td style="color:#00d4ff;">${{ "%.2f"|format(order['total']) }}</td>
+                                <td><span class="badge bg-success">{{ order['status'] }}</span></td>
+                                <td class="text-muted">{{ order['created_at'] }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% if not recent_orders %}<tr><td colspan="5" class="text-center text-muted py-3">No orders yet</td></tr>{% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Users & Actions -->
+        <div class="col-lg-5">
+            <div class="card mb-4" style="background:rgba(0,255,65,0.05);border:1px solid rgba(0,255,65,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                    <h5 class="mb-0" style="color:#00ff41;">Recent Users</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-dark table-hover mb-0">
+                        <thead><tr style="border-bottom:1px solid rgba(0,255,65,0.2);">
+                            <th style="color:#00ff41;">Username</th><th style="color:#00ff41;">Role</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for user in recent_users %}
+                            <tr style="border-bottom:1px solid rgba(0,255,65,0.1);">
+                                <td>{{ user['username'] }}</td>
+                                <td>
+                                    {% if user['role'] == 'admin' %}<span class="badge" style="background:rgba(255,0,85,0.2);color:#ff0055;">admin</span>
+                                    {% elif user['role'] == 'moderator' %}<span class="badge" style="background:rgba(0,212,255,0.2);color:#00d4ff;">mod</span>
+                                    {% else %}<span class="badge" style="background:rgba(0,255,65,0.2);color:#00ff41;">user</span>{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card" style="background:rgba(255,0,85,0.05);border:1px solid rgba(255,0,85,0.2);">
+                <div class="card-header" style="border-bottom:1px solid rgba(255,0,85,0.2);">
+                    <h5 class="mb-0" style="color:#ff0055;"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-info btn-sm"><i class="fas fa-users me-1"></i>Manage Users</a>
+                    <a href="{{ url_for('admin_tickets') }}" class="btn btn-outline-warning btn-sm"><i class="fas fa-headset me-1"></i>View Tickets</a>
+                    <a href="{{ url_for('admin_logs') }}" class="btn btn-outline-secondary btn-sm"><i class="fas fa-clipboard-list me-1"></i>View Logs</a>
+                    <a href="{{ url_for('admin_ping') }}" class="btn btn-outline-success btn-sm"><i class="fas fa-network-wired me-1"></i>Server Tools</a>
+                    <form action="{{ url_for('admin_reset_data') }}" method="POST" class="danger-confirm">
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                            <i class="fas fa-trash-alt me-1"></i>Reset Shop Data
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
