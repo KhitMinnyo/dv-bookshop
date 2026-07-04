@@ -35,7 +35,7 @@
         <div class="cyber-card" style="padding: 1rem 1.5rem;">
             <i class="fas fa-filter text-cyan me-2"></i>
             <span style="font-family: var(--font-mono); font-size: 0.85rem;">
-                Results for: <span class="text-green">{{ search|safe }}</span>
+                Results for: <span class="text-green">{% if is_secure('B1_xss_search') %}{{ search }}{% else %}{{ search|safe }}{% endif %}</span>
             </span>
             <a href="/books" class="btn btn-cyber btn-sm ms-3" style="padding: 0.3rem 0.8rem; font-size: 0.75rem;">
                 <i class="fas fa-times me-1"></i> Clear

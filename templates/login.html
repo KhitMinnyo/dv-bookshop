@@ -16,6 +16,37 @@
                     <p class="login-subtitle">Enter your credentials to continue</p>
                 </div>
 
+                <!-- E2 — Rate-limit attempt tracker (visual demo) -->
+                {% if attempt_info %}
+                <div class="attempt-tracker mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="attempt-label">
+                            <i class="fas fa-gauge-high me-1"></i> Failed attempts
+                        </span>
+                        <span class="attempt-count {% if attempt_info.remaining == 0 and attempt_info.secure %}text-red{% else %}text-cyan{% endif %}">
+                            {{ attempt_info.count }}{% if attempt_info.secure %} / {{ attempt_info.max }}{% endif %}
+                        </span>
+                    </div>
+                    {% if attempt_info.secure %}
+                        <div class="attempt-bar">
+                            <div class="attempt-bar-fill" style="width: {{ (attempt_info.count / attempt_info.max * 100) if attempt_info.max else 0 }}%;"></div>
+                        </div>
+                        {% if attempt_info.locked > 0 %}
+                            <p class="attempt-hint text-red mt-1">
+                                <i class="fas fa-lock me-1"></i> Locked for {{ attempt_info.locked }}s
+                            </p>
+                        {% else %}
+                            <p class="attempt-hint mt-1">{{ attempt_info.remaining }} attempt(s) left before lockout</p>
+                        {% endif %}
+                    {% else %}
+                        <p class="attempt-hint text-muted mt-1">
+                            <i class="fas fa-triangle-exclamation text-red me-1"></i>
+                            No rate limiting — brute-force is possible (INSECURE mode)
+                        </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 <!-- Login Form -->
                 <form action="/login" method="POST">
                     <!-- L1: Open redirect via hidden 'next' parameter -->
@@ -143,6 +174,29 @@
     .auth-link a:hover {
         text-shadow: 0 0 8px currentColor;
     }
+
+    /* E2 attempt tracker */
+    .attempt-tracker {
+        background: var(--bg-secondary);
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        padding: 0.7rem 0.9rem;
+        font-family: var(--font-mono);
+    }
+    .attempt-label { font-size: 0.75rem; color: var(--text-secondary); }
+    .attempt-count { font-size: 0.9rem; font-weight: 700; }
+    .attempt-bar {
+        height: 6px;
+        background: var(--bg-tertiary);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .attempt-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--green-primary), var(--red-accent));
+        transition: width 0.3s ease;
+    }
+    .attempt-hint { font-size: 0.7rem; margin: 0; }
 
     /* Terminal decoration */
     .terminal-decor {

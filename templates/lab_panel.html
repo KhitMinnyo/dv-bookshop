@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Lab Control Panel{% endblock %}
+{% block content %}
+<div class="row justify-content-center animate-in">
+    <div class="col-lg-9">
+        <h2 class="section-title"><i class="fas fa-sliders-h me-2"></i>Lab Control Panel</h2>
+        <p class="text-muted" style="font-family: var(--font-mono); font-size: 0.85rem;">
+            Vulnerability တစ်ခုချင်းစီကို <span class="text-red">INSECURE</span> (vulnerable) /
+            <span class="text-green">SECURE</span> (patched) mode ပြောင်းနိုင်သည်။
+            သင်ပြရာတွင် before / after နှိုင်းယှဉ်ပြရန် အသုံးပြုပါ။
+        </p>
+
+        <div class="cyber-card mb-3" style="border-color: rgba(255,0,85,0.3);">
+            <i class="fas fa-triangle-exclamation text-red me-2"></i>
+            <span style="font-family: var(--font-mono); font-size: 0.8rem;">
+                ဤ panel ကို authentication မထားပါ — lab environment အတွင်းသာ သုံးပါ။
+            </span>
+        </div>
+
+        <form method="POST">
+            <table class="table table-cyber">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">ID</th>
+                        <th>Vulnerability</th>
+                        <th style="width: 160px; text-align:center;">Mode</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td><span class="badge-cyber">{{ item.tag }}</span></td>
+                        <td>{{ item.label }}</td>
+                        <td style="text-align:center;">
+                            <div class="form-check form-switch d-inline-block">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                       name="secure" value="{{ item.key }}"
+                                       id="sw_{{ item.key }}" {% if item.secure %}checked{% endif %}>
+                                <label class="form-check-label" for="sw_{{ item.key }}"
+                                       style="font-family: var(--font-mono); font-size: 0.75rem;">
+                                    {% if item.secure %}
+                                        <span class="text-green">SECURE</span>
+                                    {% else %}
+                                        <span class="text-red">INSECURE</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-cyber-filled">
+                    <i class="fas fa-save me-1"></i> Save
+                </button>
+                <button type="submit" name="action" value="reset" class="btn btn-cyber">
+                    <i class="fas fa-rotate-left me-1"></i> All Toggles → Insecure
+                </button>
+            </div>
+        </form>
+
+        <hr class="divider">
+
+        <!-- Full lab reset -->
+        <div class="cyber-card" style="border-color: rgba(255,0,85,0.3);">
+            <h5 class="text-red" style="font-family: var(--font-heading);">
+                <i class="fas fa-radiation me-1"></i> Full Lab Reset
+            </h5>
+            <p class="text-muted" style="font-family: var(--font-mono); font-size: 0.78rem;">
+                Database နှစ်ခုကို seed အတိုင်း ပြန်တည်၊ တင်ထားသော upload ဖိုင်အားလုံး
+                ဖျက် (default.png ကျန်)၊ toggle အားလုံး insecure ပြန်ထား။
+                SQLi/DROP TABLE ကြောင့် ပျက်သွားလည်း pristine ပြန်ရသည်။
+                <span class="text-red">ပြောင်းထားသမျှ user data အားလုံး ဆုံးမည်။</span>
+            </p>
+            <form method="POST" action="/lab/reset"
+                  onsubmit="return confirm('Full reset? Database, uploads, toggles အားလုံး မူလအတိုင်း ပြန်သွားပါမည်။');">
+                <button type="submit" class="btn btn-cyber btn-danger-cyber">
+                    <i class="fas fa-radiation me-1"></i> Reset Lab to Pristine
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle label text live as the switch flips
+document.querySelectorAll('.form-check-input').forEach(function (sw) {
+    sw.addEventListener('change', function () {
+        var lbl = this.parentElement.querySelector('.form-check-label');
+        lbl.innerHTML = this.checked
+            ? '<span class="text-green">SECURE</span>'
+            : '<span class="text-red">INSECURE</span>';
+    });
+});
+</script>
+{% endblock %}

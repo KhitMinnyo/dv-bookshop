@@ -6,6 +6,7 @@ from flask import (
 import sqlite3
 import os
 import hashlib
+import hmac
 import time
 import pickle
 import base64
@@ -38,6 +39,162 @@ USER_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'users.db')
 SHOP_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bookshop.db')
 
 STATIC_RESET_SECRET = 'khitminnyo2025'  # Used for predictable password reset tokens (E1)
+
+# JWT signing secret — intentionally weak / brute-forceable (JWT module)
+JWT_SECRET = 'secret'
+
+
+# ============================================================
+# LAB CONFIG — Difficulty Toggle (secure / insecure mode)
+# ============================================================
+# Each vulnerability can be independently switched between "insecure"
+# (vulnerable, default) and "secure" (patched) so instructors can show
+# before/after behaviour without editing code. State is persisted to a
+# JSON file so it survives restarts.
+
+LAB_CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lab_config.json')
+
+# vuln_id -> secure? (False = vulnerable/insecure = default lab behaviour)
+DEFAULT_LAB_CONFIG = {
+    'A5_sqli_login': False,     # SQL injection in /login
+    'A7_sqli_search': False,    # SQL injection in /books search
+    'B1_xss_search': False,     # Reflected XSS in search results
+    'D1_idor_profile': False,   # IDOR in /profile?user_id=
+    'E2_rate_limit': False,     # Login brute-force protection (True = protected)
+    'JWT_verify': False,        # JWT signature/alg verification (True = enforced)
+}
+
+# Human-readable labels for the /lab control panel
+LAB_LABELS = {
+    'A5_sqli_login':  ('A5', 'SQL Injection — Login bypass'),
+    'A7_sqli_search': ('A7', 'SQL Injection — Book search'),
+    'B1_xss_search':  ('B1', 'Reflected XSS — Search page'),
+    'D1_idor_profile':('D1', 'IDOR — Profile viewing'),
+    'E2_rate_limit':  ('E2', 'Login rate-limiting (brute-force)'),
+    'JWT_verify':     ('JWT', 'JWT signature & alg verification'),
+}
+
+
+def load_lab_config():
+    """Load lab config from disk, filling in any missing defaults."""
+    cfg = dict(DEFAULT_LAB_CONFIG)
+    try:
+        with open(LAB_CONFIG_FILE, 'r') as f:
+            saved = json.load(f)
+        for k, v in saved.items():
+            if k in cfg:
+                cfg[k] = bool(v)
+    except (FileNotFoundError, ValueError):
+        pass
+    return cfg
+
+
+def save_lab_config(cfg):
+    """Persist lab config to disk."""
+    with open(LAB_CONFIG_FILE, 'w') as f:
+        json.dump(cfg, f, indent=2)
+
+
+def is_secure(vuln_id):
+    """Return True if the given vuln is currently in SECURE (patched) mode."""
+    return load_lab_config().get(vuln_id, False)
+
+
+# Rate-limit tracking (in-memory; resets when the server restarts).
+# username -> {'count': int, 'first': ts, 'locked_until': ts}
+LOGIN_ATTEMPTS = {}
+RATE_LIMIT_MAX = 5          # attempts allowed before lockout (secure mode)
+RATE_LIMIT_WINDOW = 300     # seconds the counter is measured over
+RATE_LIMIT_LOCKOUT = 120    # lockout duration in seconds
+
+
+def record_login_attempt(username, success):
+    """Track failed login attempts per username. Returns current attempt info."""
+    now = time.time()
+    info = LOGIN_ATTEMPTS.get(username)
+    if info is None or (now - info['first']) > RATE_LIMIT_WINDOW:
+        info = {'count': 0, 'first': now, 'locked_until': 0}
+    if success:
+        # Clear the counter on a successful login
+        LOGIN_ATTEMPTS.pop(username, None)
+        return {'count': 0, 'remaining': RATE_LIMIT_MAX, 'locked_until': 0}
+    info['count'] += 1
+    if is_secure('E2_rate_limit') and info['count'] >= RATE_LIMIT_MAX:
+        info['locked_until'] = now + RATE_LIMIT_LOCKOUT
+    LOGIN_ATTEMPTS[username] = info
+    remaining = max(0, RATE_LIMIT_MAX - info['count'])
+    return {'count': info['count'], 'remaining': remaining, 'locked_until': info['locked_until']}
+
+
+def is_locked_out(username):
+    """In secure mode, return seconds remaining on lockout (0 if not locked)."""
+    if not is_secure('E2_rate_limit'):
+        return 0
+    info = LOGIN_ATTEMPTS.get(username)
+    if not info:
+        return 0
+    remaining = info.get('locked_until', 0) - time.time()
+    return int(remaining) if remaining > 0 else 0
+
+
+# ============================================================
+# JWT HELPERS (dependency-free, intentionally vulnerable)
+# ============================================================
+
+def _b64url_encode(data):
+    return base64.urlsafe_b64encode(data).rstrip(b'=').decode()
+
+
+def _b64url_decode(s):
+    pad = '=' * (-len(s) % 4)
+    return base64.urlsafe_b64decode(s + pad)
+
+
+def jwt_encode(payload, secret=JWT_SECRET, alg='HS256'):
+    """Create a signed JWT (HS256) or an unsigned one (alg='none')."""
+    header = {'alg': alg, 'typ': 'JWT'}
+    h = _b64url_encode(json.dumps(header, separators=(',', ':')).encode())
+    p = _b64url_encode(json.dumps(payload, separators=(',', ':')).encode())
+    signing_input = f'{h}.{p}'.encode()
+    if alg == 'none':
+        return f'{h}.{p}.'
+    sig = hmac.new(secret.encode(), signing_input, hashlib.sha256).digest()
+    return f'{h}.{p}.{_b64url_encode(sig)}'
+
+
+def jwt_decode(token):
+    """Decode a JWT.
+
+    INSECURE by default (JWT_verify off): trusts the header's 'alg'. If the
+    token says alg='none' it is accepted with NO signature check, and HS256
+    tokens are verified against a weak, guessable secret.
+
+    SECURE mode (JWT_verify on): only HS256 is accepted and the signature
+    must validate; alg='none' is rejected.
+    """
+    parts = token.split('.')
+    if len(parts) != 3:
+        raise ValueError('Malformed token')
+    h_raw, p_raw, sig = parts
+    header = json.loads(_b64url_decode(h_raw))
+    payload = json.loads(_b64url_decode(p_raw))
+    alg = header.get('alg', '')
+    secure = is_secure('JWT_verify')
+
+    if alg == 'none':
+        if secure:
+            raise ValueError('alg=none is not allowed')
+        return payload  # VULN: unsigned token trusted
+
+    if alg != 'HS256':
+        raise ValueError('Unsupported algorithm')
+
+    expected = _b64url_encode(
+        hmac.new(JWT_SECRET.encode(), f'{h_raw}.{p_raw}'.encode(), hashlib.sha256).digest()
+    )
+    if not hmac.compare_digest(expected, sig):
+        raise ValueError('Invalid signature')
+    return payload
 
 
 # ============================================================
@@ -389,7 +546,7 @@ def log_admin_action(admin_id, action, target_user_id=None, details=''):
 
 @app.context_processor
 def inject_cart_count():
-    return dict(cart_count=get_cart_count())
+    return dict(cart_count=get_cart_count(), is_secure=is_secure)
 
 
 # ============================================================
@@ -410,9 +567,20 @@ def add_headers(response):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    attempt_info = None
     if request.method == 'POST':
         username = request.form.get('username', '')
         password = request.form.get('password', '')
+
+        # E2 — Rate limiting. In secure mode a locked-out account is rejected
+        # before any DB lookup; in insecure mode we only count attempts.
+        locked = is_locked_out(username)
+        if locked > 0:
+            flash(f'Too many failed attempts. Account locked for {locked}s.', 'danger')
+            return render_template('login.html', attempt_info={
+                'count': LOGIN_ATTEMPTS.get(username, {}).get('count', 0),
+                'remaining': 0, 'locked': locked,
+                'secure': is_secure('E2_rate_limit'), 'max': RATE_LIMIT_MAX})
 
         conn = get_user_db()
         c = conn.cursor()
@@ -423,6 +591,7 @@ def login():
             user = c.fetchone()
 
             if user:
+                record_login_attempt(username, success=True)
                 # E3 — Session fixation: not regenerating session
                 session['user_id'] = user['id']
                 session['username'] = user['username']
@@ -435,13 +604,15 @@ def login():
                     return redirect(next_url)
                 return redirect(url_for('index'))
 
-            # A5 — SQL injection in login (vulnerable path)
-            if not waf_check(username) and not waf_check(password):
+            # A5 — SQL injection in login. Toggleable: in secure mode the
+            # vulnerable string-formatted query path is skipped entirely.
+            if not is_secure('A5_sqli_login') and not waf_check(username) and not waf_check(password):
                 query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
                 try:
                     c.execute(query)
                     user = c.fetchone()
                     if user:
+                        record_login_attempt(username, success=True)
                         session['user_id'] = user['id']
                         session['username'] = user['username']
                         session['role'] = user['role']
@@ -449,8 +620,15 @@ def login():
                         return redirect(url_for('index'))
                 except sqlite3.Error:
                     pass
-            else:
+            elif not is_secure('A5_sqli_login'):
                 flash('WAF Detection: Potential SQL injection detected!', 'danger')
+
+            # Failed login — record the attempt for rate-limit tracking.
+            stats = record_login_attempt(username, success=False)
+            attempt_info = {
+                'count': stats['count'], 'remaining': stats['remaining'],
+                'locked': is_locked_out(username),
+                'secure': is_secure('E2_rate_limit'), 'max': RATE_LIMIT_MAX}
 
             # E5 — Username enumeration: different error messages
             c.execute('SELECT * FROM users WHERE username = ?', (username,))
@@ -464,7 +642,7 @@ def login():
         finally:
             conn.close()
 
-    return render_template('login.html')
+    return render_template('login.html', attempt_info=attempt_info)
 
 
 @app.route('/logout')
@@ -599,8 +777,13 @@ def books():
     c = conn.cursor()
 
     if search:
-        # A7 — SQL injection in search (vulnerable path alongside safe path)
-        if not waf_check(search):
+        # A7 — SQL injection in search. Toggleable: secure mode uses a
+        # parameterized query so injection is no longer possible.
+        if is_secure('A7_sqli_search'):
+            c.execute("SELECT * FROM books WHERE title LIKE ? OR author LIKE ?",
+                      (f'%{search}%', f'%{search}%'))
+            book_list = c.fetchall()
+        elif not waf_check(search):
             try:
                 query = f"SELECT * FROM books WHERE title LIKE '%{search}%' OR author LIKE '%{search}%'"
                 c.execute(query)
@@ -695,8 +878,13 @@ def book_details():
 @app.route('/profile')
 @login_required
 def profile():
-    # D1 — IDOR: user_id parameter allows viewing other users' profiles
-    user_id = request.args.get('user_id', session['user_id'])
+    # D1 — IDOR: user_id parameter allows viewing other users' profiles.
+    # Toggleable: secure mode ignores the parameter and only shows the
+    # logged-in user's own profile.
+    if is_secure('D1_idor_profile'):
+        user_id = session['user_id']
+    else:
+        user_id = request.args.get('user_id', session['user_id'])
 
     conn = get_user_db()
     c = conn.cursor()
@@ -1714,6 +1902,187 @@ def search_page():
 
     # B1 — search query passed to template, rendered with |safe
     return render_template('search.html', query=q, results=results)
+
+
+# ============================================================
+# LAB CONTROL PANEL — Difficulty Toggle UI
+# ============================================================
+
+def full_lab_reset():
+    """Restore the lab to a pristine state.
+
+    Regenerates BOTH databases from the embedded seed data, wipes every
+    uploaded file (keeping only default.png), and resets all difficulty
+    toggles to INSECURE. Robust against SQLi damage (e.g. DROP TABLE) and
+    modified users.db, because the DB files are deleted and recreated.
+
+    Returns a short summary dict for reporting.
+    """
+    summary = {'databases': [], 'uploads_removed': 0, 'config': 'reset'}
+
+    # 1. Delete the database files so init_* fully re-seeds them.
+    for path, name in ((USER_DB, 'users.db'), (SHOP_DB, 'bookshop.db')):
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+            summary['databases'].append(name)
+        except OSError as e:
+            summary['databases'].append(f'{name} (error: {e})')
+
+    # 2. Clean uploaded files, preserving the default avatar.
+    keep = {'default.png'}
+    try:
+        for fname in os.listdir(UPLOAD_FOLDER):
+            if fname in keep:
+                continue
+            fpath = os.path.join(UPLOAD_FOLDER, fname)
+            try:
+                if os.path.isfile(fpath):
+                    os.remove(fpath)
+                    summary['uploads_removed'] += 1
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+    # 3. Reset difficulty toggles to defaults (all insecure).
+    try:
+        save_lab_config(dict(DEFAULT_LAB_CONFIG))
+    except OSError:
+        summary['config'] = 'error'
+
+    # 4. Reset in-memory rate-limit counters.
+    LOGIN_ATTEMPTS.clear()
+
+    # 5. Rebuild the databases from embedded seed data.
+    init_user_db()
+    init_shop_db()
+
+    return summary
+
+
+@app.route('/lab/reset', methods=['POST'])
+def lab_reset():
+    """Full lab reset triggered from the /lab control panel."""
+    summary = full_lab_reset()
+    flash(
+        'Full lab reset complete — databases re-seeded, '
+        f"{summary['uploads_removed']} uploaded file(s) removed, toggles reset.",
+        'success')
+    return redirect(url_for('lab_panel'))
+
+
+@app.route('/lab', methods=['GET', 'POST'])
+def lab_panel():
+    """Instructor control panel to switch vulns between secure / insecure.
+
+    NOTE: intentionally unauthenticated so it is easy to use in a teaching
+    lab. Do NOT expose this on an untrusted network.
+    """
+    cfg = load_lab_config()
+
+    if request.method == 'POST':
+        if request.form.get('action') == 'reset':
+            cfg = dict(DEFAULT_LAB_CONFIG)
+        else:
+            submitted = request.form.getlist('secure')
+            for key in cfg:
+                cfg[key] = (key in submitted)
+        save_lab_config(cfg)
+        flash('Lab configuration updated.', 'success')
+        return redirect(url_for('lab_panel'))
+
+    items = []
+    for key, secure in cfg.items():
+        tag, label = LAB_LABELS.get(key, ('', key))
+        items.append({'key': key, 'tag': tag, 'label': label, 'secure': secure})
+    return render_template('lab_panel.html', items=items)
+
+
+# ============================================================
+# JWT AUTH MODULE (intentionally vulnerable)
+# ============================================================
+
+@app.route('/api/jwt/login', methods=['POST'])
+def jwt_login():
+    """Issue a JWT for valid credentials.
+
+    Accepts JSON {username, password} or form data. Token is signed with a
+    WEAK secret ('secret') using HS256 — brute-forceable offline.
+    """
+    data = request.get_json(silent=True) or request.form
+    username = data.get('username', '')
+    password = data.get('password', '')
+
+    conn = get_user_db()
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
+    user = c.fetchone()
+    conn.close()
+
+    if not user:
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    payload = {
+        'sub': user['id'],
+        'username': user['username'],
+        'role': user['role'],
+        'iat': int(time.time()),
+    }
+    token = jwt_encode(payload)
+    return jsonify({'token': token, 'token_type': 'Bearer'})
+
+
+def _read_bearer_token():
+    auth = request.headers.get('Authorization', '')
+    if auth.startswith('Bearer '):
+        return auth[7:].strip()
+    return request.args.get('token', '')
+
+
+@app.route('/api/jwt/me')
+def jwt_me():
+    """Return the caller's identity from their JWT.
+
+    VULN (insecure mode): jwt_decode trusts alg=none and a weak secret, so an
+    attacker can forge any identity. Toggle 'JWT_verify' to enforce checks.
+    """
+    token = _read_bearer_token()
+    if not token:
+        return jsonify({'error': 'Missing token'}), 401
+    try:
+        payload = jwt_decode(token)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 401
+    return jsonify({'identity': payload})
+
+
+@app.route('/api/jwt/admin')
+def jwt_admin():
+    """Admin-only endpoint guarded solely by the JWT 'role' claim.
+
+    Forge a token with role=admin (via alg=none or the weak secret) to read
+    the flag. In secure mode the forged token fails verification first.
+    """
+    token = _read_bearer_token()
+    if not token:
+        return jsonify({'error': 'Missing token'}), 401
+    try:
+        payload = jwt_decode(token)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 401
+    if payload.get('role') != 'admin':
+        return jsonify({'error': 'Admin role required'}), 403
+
+    conn = get_user_db()
+    c = conn.cursor()
+    c.execute("SELECT secret_note FROM users WHERE username = 'admin'")
+    row = c.fetchone()
+    conn.close()
+    return jsonify({
+        'message': 'Welcome, admin.',
+        'flag': row['secret_note'] if row else None,
+    })
 
 
 # ============================================================
