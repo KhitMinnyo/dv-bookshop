@@ -5,15 +5,15 @@
     <div class="col-lg-9">
         <h2 class="section-title"><i class="fas fa-sliders-h me-2"></i>Lab Control Panel</h2>
         <p class="text-muted" style="font-family: var(--font-mono); font-size: 0.85rem;">
-            Vulnerability တစ်ခုချင်းစီကို <span class="text-red">INSECURE</span> (vulnerable) /
-            <span class="text-green">SECURE</span> (patched) mode ပြောင်းနိုင်သည်။
-            သင်ပြရာတွင် before / after နှိုင်းယှဉ်ပြရန် အသုံးပြုပါ။
+            Switch each vulnerability between <span class="text-red">INSECURE</span> (vulnerable) /
+            <span class="text-green">SECURE</span> (patched) mode.
+            Use it to demonstrate before / after comparisons while teaching.
         </p>
 
         <div class="cyber-card mb-3" style="border-color: rgba(255,0,85,0.3);">
             <i class="fas fa-triangle-exclamation text-red me-2"></i>
             <span style="font-family: var(--font-mono); font-size: 0.8rem;">
-                ဤ panel ကို authentication မထားပါ — lab environment အတွင်းသာ သုံးပါ။
+                This panel has no authentication — use it only inside a trusted lab environment.
             </span>
         </div>
 
@@ -69,13 +69,13 @@
                 <i class="fas fa-radiation me-1"></i> Full Lab Reset
             </h5>
             <p class="text-muted" style="font-family: var(--font-mono); font-size: 0.78rem;">
-                Database နှစ်ခုကို seed အတိုင်း ပြန်တည်၊ တင်ထားသော upload ဖိုင်အားလုံး
-                ဖျက် (default.png ကျန်)၊ toggle အားလုံး insecure ပြန်ထား။
-                SQLi/DROP TABLE ကြောင့် ပျက်သွားလည်း pristine ပြန်ရသည်။
-                <span class="text-red">ပြောင်းထားသမျှ user data အားလုံး ဆုံးမည်။</span>
+                Rebuilds both databases from seed, deletes all uploaded files
+                (keeping default.png), and resets every toggle back to insecure.
+                Recovers to a pristine state even after SQLi / DROP TABLE damage.
+                <span class="text-red">All modified user data will be lost.</span>
             </p>
             <form method="POST" action="/lab/reset"
-                  onsubmit="return confirm('Full reset? Database, uploads, toggles အားလုံး မူလအတိုင်း ပြန်သွားပါမည်။');">
+                  onsubmit="return confirm('Full reset? Database, uploads, and toggles will all be restored to their original state.');">
                 <button type="submit" class="btn btn-cyber btn-danger-cyber">
                     <i class="fas fa-radiation me-1"></i> Reset Lab to Pristine
                 </button>

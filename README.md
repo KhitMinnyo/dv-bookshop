@@ -59,6 +59,17 @@ Dependency-free JWT implementation. Weak signing secret (`secret`, HS256) + acce
 
 ---
 
+## ♻️ Full Lab Reset
+
+If the lab breaks while practicing exploitation (SQLi `DROP TABLE`, modified passwords/roles, uploaded files), you can restore it to a pristine state. Two ways —
+
+- **CLI:** `./reset.sh` (best to run while the app is stopped — most reliable)
+- **Browser:** `/lab` panel → **Reset Lab to Pristine** button
+
+On reset — `users.db` + `bookshop.db` are rebuilt from the embedded seed, all files in `static/uploads/` are deleted (`default.png` is kept), every difficulty toggle is set back to INSECURE, and rate-limit counters are cleared. Because the DB files are deleted and recreated, even `DROP TABLE` damage is fully recovered.
+
+---
+
 ## 🚦 Rate-Limit Demo (E2)
 
 The login page shows a live **failed-attempt counter**. In INSECURE mode it counts but never blocks (brute-force works, visibly). Toggle E2 to **SECURE** to enforce lockout after 5 attempts / 120s.
