@@ -1,0 +1,47 @@
+services:
+  gateway:
+    image: nginx:1.27-alpine
+    profiles: [stack]
+    ports:
+      - "127.0.0.1:8088:8080"
+    volumes:
+      - ./nginx/gateway.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - cache
+    networks:
+      - edge
+
+  cache:
+    image: varnish:7.6-alpine
+    profiles: [stack]
+    command:
+      - varnishd
+      - -F
+      - -f
+      - /etc/varnish/default.vcl
+      - -a
+      - :6081
+      - -s
+      - malloc,64m
+    volumes:
+      - ./varnish/default.vcl:/etc/varnish/default.vcl:ro
+    depends_on:
+      - backend
+    networks:
+      - edge
+      - origin
+
+  backend:
+    image: nginx:1.27-alpine
+    profiles: [stack]
+    volumes:
+      - ./backend/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - origin
+
+networks:
+  edge:
+    name: dv-bookshop-infra-lab-edge
+  origin:
+    name: dv-bookshop-infra-lab-origin
+    internal: true

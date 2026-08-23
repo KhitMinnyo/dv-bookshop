@@ -1,0 +1,28 @@
+# Runtime databases and lab state
+race_lab.db
+optional-labs/*.db
+optional-labs/*.sqlite
+optional-labs/*.sqlite3
+optional-labs/*_state.json
+
+# Local uploads and generated files
+optional-labs/data/
+optional-labs/uploads/
+infra-labs/tls/generated/*
+companion-labs/*/generated/
+companion-labs/*/__pycache__/
+
+# Python and Node local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+
+# Local secrets and certificates
+*.pem
+*.key
+*.crt
+*.csr
+*.env
+!.env.example

@@ -1,0 +1,70 @@
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    profiles: [hardened]
+    ports:
+      - "127.0.0.1:8090:8080"
+    volumes:
+      - ./nginx/proxy.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 64m
+    cpus: 0.25
+    ulimits:
+      nofile:
+        soft: 1024
+        hard: 2048
+    networks:
+      - edge
+      - app_net
+
+  app:
+    build:
+      context: ../..
+      dockerfile: infra-labs/hardening/Dockerfile
+    profiles: [hardened]
+    command: ["python3", "-u", "/opt/bookshop/example_app.py"]
+    expose:
+      - "8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.50
+    ulimits:
+      nofile:
+        soft: 1024
+        hard: 2048
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - app_net
+
+networks:
+  edge:
+    name: dv-bookshop-infra-lab-hardening-edge
+  app_net:
+    name: dv-bookshop-infra-lab-hardening-app
+    internal: true

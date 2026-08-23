@@ -1,0 +1,3 @@
+# Never commit local certificates or private keys.
+*
+!.gitignore

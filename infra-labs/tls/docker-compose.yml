@@ -1,0 +1,9 @@
+services:
+  mtls-nginx:
+    image: nginx:1.27-alpine
+    profiles: [mtls]
+    ports:
+      - "127.0.0.1:5443:5443"
+    volumes:
+      - ./nginx/mtls.conf:/etc/nginx/nginx.conf:ro
+      - ./generated:/etc/nginx/tls:ro

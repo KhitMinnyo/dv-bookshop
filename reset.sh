@@ -1,6 +1,6 @@
 #!/bin/bash
 # Full lab reset — restore dv-bookshop to a pristine state.
-# Re-seeds both databases, wipes uploaded files (keeps default.png),
+# Re-seeds all lab databases, wipes uploaded files (keeps default.png),
 # and resets all difficulty toggles to INSECURE.
 # Safe to run while the app is stopped (recommended).
 set -e

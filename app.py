@@ -37,6 +37,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 USER_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'users.db')
 SHOP_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bookshop.db')
+RACE_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'race_lab.db')
 
 STATIC_RESET_SECRET = 'khitminnyo2025'  # Used for predictable password reset tokens (E1)
 
@@ -453,6 +454,44 @@ def init_shop_db():
         c.executemany('''INSERT INTO reviews (user_id, book_id, rating, comment, created_at)
                         VALUES (?, ?, ?, ?, ?)''', reviews)
 
+    conn.commit()
+    conn.close()
+
+
+def get_race_db():
+    """Connect to the isolated race-condition training database."""
+    conn = sqlite3.connect(RACE_DB, timeout=5)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_race_lab_db(reset=False):
+    """Create the isolated race lab without touching shop or user data."""
+    if reset and os.path.exists(RACE_DB):
+        os.remove(RACE_DB)
+
+    conn = get_race_db()
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS race_accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        balance REAL NOT NULL DEFAULT 100.0
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS race_transfers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender TEXT NOT NULL,
+        recipient TEXT NOT NULL,
+        amount REAL NOT NULL,
+        mode TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )''')
+
+    c.execute('SELECT COUNT(*) AS count FROM race_accounts')
+    if c.fetchone()['count'] == 0:
+        c.executemany(
+            'INSERT INTO race_accounts (username, balance) VALUES (?, ?)',
+            [('alice_hacker', 100.0), ('bob_secure', 0.0)],
+        )
     conn.commit()
     conn.close()
 
@@ -1911,7 +1950,7 @@ def search_page():
 def full_lab_reset():
     """Restore the lab to a pristine state.
 
-    Regenerates BOTH databases from the embedded seed data, wipes every
+    Regenerates all lab databases from the embedded seed data, wipes every
     uploaded file (keeping only default.png), and resets all difficulty
     toggles to INSECURE. Robust against SQLi damage (e.g. DROP TABLE) and
     modified users.db, because the DB files are deleted and recreated.
@@ -1921,7 +1960,11 @@ def full_lab_reset():
     summary = {'databases': [], 'uploads_removed': 0, 'config': 'reset'}
 
     # 1. Delete the database files so init_* fully re-seeds them.
-    for path, name in ((USER_DB, 'users.db'), (SHOP_DB, 'bookshop.db')):
+    for path, name in (
+        (USER_DB, 'users.db'),
+        (SHOP_DB, 'bookshop.db'),
+        (RACE_DB, 'race_lab.db'),
+    ):
         try:
             if os.path.exists(path):
                 os.remove(path)
@@ -1957,6 +2000,7 @@ def full_lab_reset():
     # 5. Rebuild the databases from embedded seed data.
     init_user_db()
     init_shop_db()
+    init_race_lab_db()
 
     return summary
 
@@ -2086,6 +2130,171 @@ def jwt_admin():
 
 
 # ============================================================
+# ISOLATED RACE-CONDITION LAB
+# ============================================================
+
+def _race_lab_user():
+    """Return the logged-in training user allowed to use the race lab."""
+    username = session.get('username')
+    if username not in {'alice_hacker', 'bob_secure'}:
+        return None
+    return username
+
+
+def _race_transfer_input():
+    """Read and validate the small transfer payload used by both lab routes."""
+    data = request.get_json(silent=True) or request.form
+    try:
+        amount = float(data.get('amount', 0))
+    except (TypeError, ValueError):
+        amount = 0
+    recipient = str(data.get('recipient', '')).strip()
+    if amount <= 0 or amount > 1000 or not recipient:
+        return None
+    return amount, recipient
+
+
+@app.route('/api/race-lab/status')
+@login_required
+def race_lab_status():
+    """Show balances and transfer records from the isolated race lab."""
+    if not _race_lab_user():
+        return jsonify({'error': 'Use alice_hacker or bob_secure for the race lab'}), 403
+
+    conn = get_race_db()
+    accounts = [dict(row) for row in conn.execute(
+        'SELECT username, balance FROM race_accounts ORDER BY id'
+    ).fetchall()]
+    transfers = [dict(row) for row in conn.execute(
+        'SELECT sender, recipient, amount, mode, created_at '
+        'FROM race_transfers ORDER BY id DESC LIMIT 20'
+    ).fetchall()]
+    conn.close()
+    return jsonify({'accounts': accounts, 'recent_transfers': transfers})
+
+
+@app.route('/api/race-lab/transfer/vulnerable', methods=['POST'])
+@login_required
+def race_lab_vulnerable_transfer():
+    """Intentionally expose a check-then-act race in an isolated database."""
+    sender = _race_lab_user()
+    values = _race_transfer_input()
+    if not sender:
+        return jsonify({'error': 'Use alice_hacker or bob_secure for the race lab'}), 403
+    if not values:
+        return jsonify({'error': 'Send a positive amount and recipient'}), 400
+
+    amount, recipient = values
+    conn = get_race_db()
+    c = conn.cursor()
+    c.execute('SELECT balance FROM race_accounts WHERE username = ?', (sender,))
+    sender_row = c.fetchone()
+    c.execute('SELECT username FROM race_accounts WHERE username = ?', (recipient,))
+    recipient_row = c.fetchone()
+
+    if not sender_row or not recipient_row:
+        conn.close()
+        return jsonify({'error': 'Race-lab account not found'}), 404
+    if sender == recipient:
+        conn.close()
+        return jsonify({'error': 'Sender and recipient must be different'}), 400
+    if sender_row['balance'] < amount:
+        conn.close()
+        return jsonify({'error': 'Insufficient balance', 'balance': sender_row['balance']}), 409
+
+    # The deliberate pause makes two requests pass the same balance check.
+    time.sleep(0.1)
+    c.execute(
+        'UPDATE race_accounts SET balance = balance - ? WHERE username = ?',
+        (amount, sender),
+    )
+    c.execute(
+        'UPDATE race_accounts SET balance = balance + ? WHERE username = ?',
+        (amount, recipient),
+    )
+    c.execute(
+        'INSERT INTO race_transfers (sender, recipient, amount, mode) VALUES (?, ?, ?, ?)',
+        (sender, recipient, amount, 'vulnerable'),
+    )
+    conn.commit()
+    c.execute('SELECT balance FROM race_accounts WHERE username = ?', (sender,))
+    balance = c.fetchone()['balance']
+    conn.close()
+    return jsonify({
+        'status': 'accepted',
+        'mode': 'vulnerable',
+        'sender': sender,
+        'recipient': recipient,
+        'amount': amount,
+        'sender_balance': balance,
+    }), 200
+
+
+@app.route('/api/race-lab/transfer/safe', methods=['POST'])
+@login_required
+def race_lab_safe_transfer():
+    """Use one SQLite transaction to close the race-condition window."""
+    sender = _race_lab_user()
+    values = _race_transfer_input()
+    if not sender:
+        return jsonify({'error': 'Use alice_hacker or bob_secure for the race lab'}), 403
+    if not values:
+        return jsonify({'error': 'Send a positive amount and recipient'}), 400
+
+    amount, recipient = values
+    conn = get_race_db()
+    c = conn.cursor()
+    try:
+        # Serialize the check and both balance updates for this SQLite database.
+        c.execute('BEGIN IMMEDIATE')
+        c.execute(
+            'UPDATE race_accounts SET balance = balance - ? '
+            'WHERE username = ? AND balance >= ?',
+            (amount, sender, amount),
+        )
+        if c.rowcount != 1:
+            conn.rollback()
+            return jsonify({'error': 'Insufficient balance or transfer rejected'}), 409
+
+        c.execute('SELECT username FROM race_accounts WHERE username = ?', (recipient,))
+        if not c.fetchone() or sender == recipient:
+            conn.rollback()
+            return jsonify({'error': 'Invalid recipient'}), 400
+
+        c.execute(
+            'UPDATE race_accounts SET balance = balance + ? WHERE username = ?',
+            (amount, recipient),
+        )
+        c.execute(
+            'INSERT INTO race_transfers (sender, recipient, amount, mode) VALUES (?, ?, ?, ?)',
+            (sender, recipient, amount, 'safe'),
+        )
+        conn.commit()
+        c.execute('SELECT balance FROM race_accounts WHERE username = ?', (sender,))
+        balance = c.fetchone()['balance']
+        return jsonify({
+            'status': 'accepted',
+            'mode': 'safe',
+            'sender': sender,
+            'recipient': recipient,
+            'amount': amount,
+            'sender_balance': balance,
+        }), 200
+    finally:
+        conn.close()
+
+
+@app.route('/api/race-lab/reset', methods=['POST'])
+@login_required
+def race_lab_reset():
+    """Reset only race_lab.db; shop and user databases remain untouched."""
+    if not _race_lab_user():
+        return jsonify({'error': 'Use alice_hacker or bob_secure for the race lab'}), 403
+    init_race_lab_db(reset=True)
+    return jsonify({'status': 'race lab reset', 'shop_data_changed': False}), 200
+
+
+# ============================================================
 # ERROR HANDLERS
 # ============================================================
 
@@ -2106,4 +2315,5 @@ def server_error(e):
 if __name__ == '__main__':
     init_user_db()
     init_shop_db()
+    init_race_lab_db()
     app.run(debug=True, host='0.0.0.0', port=5005)

@@ -1,0 +1,16 @@
+[req]
+distinguished_name = client_dn
+req_extensions = client_ext
+prompt = no
+
+[client_dn]
+C = XX
+ST = Local
+L = Local
+O = DV-Bookshop Infrastructure Lab
+OU = Local Client
+CN = lab-client
+
+[client_ext]
+extendedKeyUsage = clientAuth
+keyUsage = digitalSignature
