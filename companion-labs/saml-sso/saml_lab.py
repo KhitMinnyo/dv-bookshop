@@ -22,7 +22,7 @@ DS_NS = "http://www.w3.org/2000/09/xmldsig#"
 NS = {"saml": SAML_NS, "ds": DS_NS}
 ISSUER = "https://idp.local.example"
 AUDIENCE = "https://sp.local.example"
-ACS_URL = "http://127.0.0.1:5005/sp/acs"
+ACS_URL = "http://127.0.0.1:5355/sp/acs"
 SIGNING_KEY = b"saml-companion-lab-only-key"
 PENDING: dict[str, str] = {}
 SESSIONS: dict[str, dict[str, str]] = {}
@@ -198,4 +198,4 @@ def profile() -> tuple[str, int] | str:
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5005, debug=False)
+    app.run(host="127.0.0.1", port=5355, debug=False)

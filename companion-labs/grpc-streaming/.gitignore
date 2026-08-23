@@ -1,0 +1,7 @@
+# Local environments, caches, and generated protobuf modules
+.venv/
+__pycache__/
+grpc_web/__pycache__/
+*.py[cod]
+bookshop_pb2.py
+bookshop_pb2_grpc.py

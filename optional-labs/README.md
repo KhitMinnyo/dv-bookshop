@@ -73,7 +73,7 @@ curl -s -X POST http://127.0.0.1:5006/zip-slip/safe/extract \
 
 ## 3. YAML Insecure Deserialization
 
-The vulnerable route is deliberately labeled and calls `yaml.load(..., Loader=yaml.Loader)`. That parser can construct Python objects from untrusted YAML and must not be used for request data. The safe route calls `yaml.safe_load` and then applies a small schema: a mapping with only a non-empty string `name` and an integer `quantity` from 1 through 20.
+The vulnerable route is deliberately labeled and calls `yaml.load(..., Loader=yaml.Loader)`. That parser can construct Python objects from untrusted YAML and must not be used for request data. Both YAML routes reject request bodies larger than 64 KiB before parsing. The safe route uses a `SafeLoader` subclass limited to 200 parsed nodes, 20 nesting levels, and 20 aliases, then applies a small schema: a mapping with only a non-empty string `name` and an integer `quantity` from 1 through 20. These are local fixture limits, not a replacement for deployment-level request and resource controls.
 
 Use only ordinary scalar YAML in the vulnerable example. Do not submit object-construction or code-execution payloads.
 

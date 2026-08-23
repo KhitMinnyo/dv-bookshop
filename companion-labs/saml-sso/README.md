@@ -24,7 +24,7 @@ python3 -m pip install -r requirements.txt
 python3 saml_lab.py
 ```
 
-Open `http://127.0.0.1:5005/` in a browser and choose `Start local SSO`. The
+Open `http://127.0.0.1:5355/` in a browser and choose `Start local SSO`. The
 mock IdP issues a response and the browser posts it to the local ACS endpoint.
 The app keeps pending requests and sessions in memory only.
 
@@ -68,6 +68,6 @@ The service provider checks all of the following before creating a session:
 
 ## Reset and Cleanup
 
-Stop the process with `Ctrl-C` and remove the optional `.venv` directory if it
-was created. All pending requests and sessions disappear when the process
-stops. No browser or external IdP state is required.
+Stop the process with `Ctrl-C`, then run `sh cleanup.sh` to remove this lab's
+optional `.venv` and Python cache. All pending requests and sessions disappear
+when the process stops. No browser or external IdP state is required.

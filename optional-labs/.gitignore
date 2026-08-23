@@ -1,0 +1,5 @@
+# Local runtime state and Python artifacts
+lab-data/
+.venv/
+__pycache__/
+*.py[cod]

@@ -37,13 +37,13 @@ curl -i -H 'Accept: application/json' http://127.0.0.1:8088/catalog/book-1
 curl -i -H 'Authorization: Bearer lab-user' http://127.0.0.1:8088/account
 ```
 
-The second catalog request can show a Varnish `X-Cache: HIT` and an `Age` header. The authorization request is passed and is not stored by the cache. The `Accept` header is included in the Varnish hash only for the small content-negotiation example in `default.vcl`; production applications should make the variation policy match the backend's `Vary` contract.
+The second catalog request can show a Varnish `X-Cache: HIT` and an `Age` header. `/account` is explicitly passed before cache lookup, as are `/profile`, `/edit_profile`, `/delete_account`, `/cart`, `/checkout`, `/order_history`, `/order`, and `/admin`. Requests with `Authorization` or `Cookie` are also passed, so authenticated or session-personalized responses are not read from or stored in the shared cache. The `Accept` header is included in the Varnish hash only for the small content-negotiation example in `default.vcl`; production applications should make the variation policy match the backend's `Vary` contract.
 
 ## Configuration Examples
 
 ### Path normalization
 
-Nginx has `merge_slashes on`, so repeated slashes are normalized before proxying. The gateway also rejects dot-segment-looking paths instead of trying to invent an application-specific interpretation. Canonicalization must be consistent across the edge, cache, router, and application. If one layer decodes or normalizes a path differently, authorization and cache decisions can diverge.
+Nginx has `merge_slashes on`, so repeated slashes are normalized before proxying. This configuration does not add an explicit dot-segment rejection; it relies on Nginx URI normalization and the origin's routing and authorization. Canonicalization must be consistent across the edge, cache, router, and application. If one layer decodes or normalizes a path differently, authorization and cache decisions can diverge.
 
 The VCL sorts query parameters for the cache key. It does not remove query parameters: tracking parameters, signed parameters, and application parameters must be classified deliberately in a real system. The sample bypasses requests containing common redirect parameters rather than caching them.
 
@@ -53,15 +53,15 @@ The public gateway does not trust client-supplied `X-Forwarded-For`, `X-Forwarde
 
 ### Cache key and response headers
 
-The VCL cache key includes the normalized host and URL. It deliberately excludes arbitrary request headers. Responses retain application-controlled `Cache-Control`, `ETag`, and `Vary` headers. Varnish supplies `Age` for a cached response, and the example adds `X-Cache` for local observation. `Set-Cookie`, `private`, and `no-store` responses are not cached.
+The VCL cache key includes the normalized host and URL. It deliberately excludes arbitrary request headers. Responses retain application-controlled `Cache-Control`, `ETag`, and `Vary` headers. Varnish supplies `Age` for a cached response, and the example adds `X-Cache` for local observation. Requests to known personalized paths, and requests carrying `Authorization` or `Cookie`, pass before cache lookup. Responses with `Set-Cookie`, a `Vary` header naming `Cookie` or `Authorization`, `private`, `no-store`, or `no-cache` are not cached.
 
 ### Cache poisoning
 
-Cache poisoning occurs when an untrusted request value changes an origin response but is absent from the cache key. Typical examples are an unvalidated host, forwarding header, cookie, authorization context, or content-negotiation header. The sample reduces this risk by overwriting forwarding headers, bypassing requests with cookies or authorization, hashing only an explicit `Accept` value, and refusing redirect-like query parameters. Those rules are not a substitute for matching the complete application response variation.
+Cache poisoning occurs when an untrusted request value changes an origin response but is absent from the cache key. Typical examples are an unvalidated host, forwarding header, cookie, authorization context, or content-negotiation header. The sample reduces this risk by overwriting forwarding headers, bypassing known personalized paths and requests with cookies or authorization, refusing responses that vary on user context, hashing only an explicit `Accept` value, and refusing redirect-like query parameters. Those rules are not a substitute for matching the complete application response variation.
 
 ### Cache deception
 
-Cache deception occurs when a dynamic endpoint is made to look like a cacheable static asset, such as a profile path followed by a fake `.css` suffix. The VCL bypasses paths that have an asset suffix followed by another path component, and the gateway marks `/account` as private. Applications should also route static and dynamic content under unambiguous namespaces and return `Cache-Control: private, no-store` for personalized responses.
+Cache deception occurs when a dynamic endpoint is made to look like a cacheable static asset, such as a profile path followed by a fake `.css` suffix. The VCL bypasses paths that have an asset suffix followed by another path component, and the gateway marks `/account` as `private, no-store`. Applications should also route static and dynamic content under unambiguous namespaces and return `Cache-Control: private, no-store` for personalized responses.
 
 ## Simulated Fallback
 

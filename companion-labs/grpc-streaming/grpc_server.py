@@ -75,12 +75,16 @@ class BookStream(bookshop_pb2_grpc.BookStreamServicer):
         request_iterator: AsyncIterator[bookshop_pb2.ChatMessage],
         context: grpc.aio.ServicerContext,
     ) -> AsyncIterator[bookshop_pb2.ChatMessage]:
-        first = True
+        owner: str | None = None
         count = 0
         async for request in request_iterator:
-            if first:
-                await authorize(context, request.owner, self.safe)
-                first = False
+            if owner is None:
+                owner = request.owner
+            if self.safe and request.owner != owner:
+                await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "owner changed in stream")
+            # Authenticate and authorize each message, not only the first one.
+            # Vulnerable mode intentionally keeps trusting the requested owner.
+            await authorize(context, request.owner, self.safe)
             if self.safe and len(request.text.encode("utf-8")) > 512:
                 await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "chat message is too large")
             count += 1

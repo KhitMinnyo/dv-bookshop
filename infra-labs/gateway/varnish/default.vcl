@@ -15,6 +15,18 @@ sub vcl_recv {
         return (pass);
     }
 
+    # Bypass the known personalized endpoint before looking up an existing
+    # object. This is required even when the origin would mark its response
+    # private, because response headers are too late to prevent a cache hit.
+    if (req.url ~ "(?i)^/account(/|\?|$)") {
+        return (pass);
+    }
+
+    # Keep other known user-specific paths and authenticated requests out of
+    # the shared cache. The credential check also covers paths added later.
+    if (req.url ~ "(?i)^/(profile|edit_profile|delete_account|cart|checkout|order_history|order|admin)(/|\?|$)") {
+        return (pass);
+    }
     # Do not cache requests carrying user state or credentials.
     if (req.http.Authorization || req.http.Cookie) {
         return (pass);
@@ -56,6 +68,7 @@ sub vcl_backend_response {
     # Preserve Cache-Control, ETag, and Vary from the origin. Never cache a
     # response that sets a session cookie or explicitly forbids shared caching.
     if (beresp.http.Set-Cookie ||
+        beresp.http.Vary ~ "(?i)(Cookie|Authorization)" ||
         beresp.http.Cache-Control ~ "(?i)(private|no-store|no-cache)") {
         set beresp.uncacheable = true;
         set beresp.ttl = 0s;

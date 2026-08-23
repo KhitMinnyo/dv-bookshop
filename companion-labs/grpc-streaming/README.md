@@ -27,7 +27,7 @@ python -m grpc_tools.protoc \
   bookshop.proto
 ```
 
-The last command should create `bookshop_pb2.py` and `bookshop_pb2_grpc.py` beside the `.proto`. They are generated local artifacts and are ignored by `cleanup.sh`.
+The last command should create `bookshop_pb2.py` and `bookshop_pb2_grpc.py` beside the `.proto`. They are generated local artifacts, ignored by the lab-local `.gitignore`, and removed by `cleanup.sh`.
 
 ## Run the Fixture
 
@@ -46,7 +46,7 @@ Expected behavior:
 - `upload` sends three `BookUpload` messages and receives one summary.
 - `chat` sends two messages and receives two replies on a bidirectional stream.
 
-The client sends `authorization: Bearer lab-reader` metadata. This token is a training value only. Safe mode requires that token and permits only `demo-user`. Vulnerable mode accepts any non-empty bearer token and trusts the requested owner, illustrating why authentication alone is not authorization.
+The client sends `authorization: Bearer lab-reader` metadata. This token is a training value only. Safe mode requires that token, permits only `demo-user`, and checks the owner on every Chat message. Vulnerable mode accepts any non-empty bearer token and trusts the requested owner, illustrating why authentication alone is not authorization.
 
 To compare authorization behavior, run the server with `--mode vulnerable`, then request another owner:
 

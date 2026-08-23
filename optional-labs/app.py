@@ -19,6 +19,7 @@ from pathlib import Path
 import pyotp
 import yaml
 from flask import Flask, jsonify, request
+from yaml.events import AliasEvent
 
 
 app = Flask(__name__)
@@ -280,10 +281,57 @@ def safe_zip_extract():
 # 3. YAML insecure deserialization
 # ---------------------------------------------------------------------------
 
+YAML_MAX_BYTES = 64 * 1024
+YAML_MAX_NODES = 200
+YAML_MAX_DEPTH = 20
+YAML_MAX_ALIASES = 20
+
+
+class LimitedSafeLoader(yaml.SafeLoader):
+    """SafeLoader with small parser bounds for this local request fixture."""
+
+    def __init__(self, stream):
+        super().__init__(stream)
+        self.node_count = 0
+        self.alias_count = 0
+        self.parse_depth = 0
+
+    def compose_node(self, parent, index):
+        self.node_count += 1
+        if self.node_count > YAML_MAX_NODES:
+            raise yaml.YAMLError("YAML node limit exceeded.")
+        if self.check_event(AliasEvent):
+            self.alias_count += 1
+            if self.alias_count > YAML_MAX_ALIASES:
+                raise yaml.YAMLError("YAML alias limit exceeded.")
+        self.parse_depth += 1
+        if self.parse_depth > YAML_MAX_DEPTH:
+            self.parse_depth -= 1
+            raise yaml.YAMLError("YAML nesting limit exceeded.")
+        try:
+            return super().compose_node(parent, index)
+        finally:
+            self.parse_depth -= 1
+
+
+def read_yaml_body():
+    """Read at most one byte beyond the YAML request limit before parsing."""
+    if request.content_length is not None and request.content_length > YAML_MAX_BYTES:
+        return None, error(f"YAML request body must not exceed {YAML_MAX_BYTES} bytes.", 413)
+    raw = request.stream.read(YAML_MAX_BYTES + 1)
+    if len(raw) > YAML_MAX_BYTES:
+        return None, error(f"YAML request body must not exceed {YAML_MAX_BYTES} bytes.", 413)
+    try:
+        return raw.decode("utf-8"), None
+    except UnicodeDecodeError:
+        return None, error("YAML request body must be UTF-8.", 400)
+
 
 @app.post("/yaml-lab/vulnerable/parse")
 def vulnerable_yaml_parse():
-    raw = request.get_data(as_text=True)
+    raw, body_error = read_yaml_body()
+    if body_error is not None:
+        return body_error
     if not raw.strip():
         return error("Send YAML in the request body.")
     try:
@@ -305,11 +353,13 @@ def vulnerable_yaml_parse():
 
 @app.post("/yaml-lab/safe/parse")
 def safe_yaml_parse():
-    raw = request.get_data(as_text=True)
+    raw, body_error = read_yaml_body()
+    if body_error is not None:
+        return body_error
     if not raw.strip():
         return error("Send YAML in the request body.")
     try:
-        parsed = yaml.safe_load(raw)
+        parsed = yaml.load(raw, Loader=LimitedSafeLoader)
     except yaml.YAMLError as exc:
         return error(f"YAML parse error: {exc}", 400)
 
@@ -327,7 +377,7 @@ def safe_yaml_parse():
         {
             "lab": "yaml-insecure-deserialization",
             "mode": "safe",
-            "parser": "yaml.safe_load",
+            "parser": "yaml.load(..., Loader=LimitedSafeLoader)",
             "validated": {"name": parsed["name"][:100], "quantity": quantity},
         }
     )
