@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from xml.etree import ElementTree as ET
+from lxml import etree
 
 # ============================================================
 # APP CONFIGURATION
@@ -25,12 +26,33 @@ from xml.etree import ElementTree as ET
 
 app = Flask(__name__)
 # J5 — Hardcoded secret key (Sensitive Data Exposure)
+# F1 — Broken access control: the secret key is hardcoded and public (it's
+# committed to source control), so anyone who reads this file can use
+# Flask's own session-signing library (itsdangerous) to forge a validly
+# signed session cookie with role='admin' -- a full authentication bypass
+# that works even when every other /lab toggle is set to SECURE.
 app.secret_key = 'bookshop_secret_key_2025_khitminnyo'
 
 # F3 — Session cookie missing Secure/HttpOnly flags
 app.config['SESSION_COOKIE_HTTPONLY'] = False
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SESSION_COOKIE_SAMESITE'] = None
+
+# L2 — HTTP header injection / response splitting via /set_language?lang=.
+# Werkzeug >=2.1 rejects header values containing \r or \n by default (a
+# fix for HTTP response splitting), which silently turned this exercise
+# into a dead end. We deliberately restore the old, permissive behavior
+# here so the lab is genuinely exploitable again on current dependencies.
+import werkzeug.datastructures.headers as _wh_headers
+
+
+def _insecure_str_header_value(value):
+    if not isinstance(value, str):
+        value = str(value)
+    return value
+
+
+_wh_headers._str_header_value = _insecure_str_header_value
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -221,6 +243,10 @@ def init_user_db():
     conn = get_user_db()
     c = conn.cursor()
 
+    # J1 — Sensitive data exposure: passwords (see F2) and full payment
+    # card data, including the CVV, are stored in plaintext with no
+    # hashing/encryption/tokenization at all -- a PCI-DSS violation in
+    # any real system (card issuers explicitly forbid storing the CVV).
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
@@ -973,6 +999,11 @@ def edit_profile():
 @login_required
 def change_password():
     # C1 — CSRF: No CSRF token validation
+    # E4 — Account takeover: no current-password confirmation is required.
+    # Any authenticated request against this route (a stolen session
+    # cookie, an XSS payload riding the victim's session, or the CSRF
+    # above) fully takes over the account without ever knowing the
+    # existing password.
     new_password = request.form.get('new_password', '')
 
     if not new_password:
@@ -1563,8 +1594,15 @@ def api_import_books():
         return jsonify({'error': 'No XML data provided'}), 400
 
     try:
-        # XXE vulnerable: parsing XML without disabling external entities
-        root = ET.fromstring(xml_data)
+        # L3 — XXE vulnerable: parsing XML without disabling external
+        # entities. NOTE: stdlib xml.etree.ElementTree (expat) does NOT
+        # resolve external SYSTEM/PUBLIC entities, so this route was not
+        # actually exploitable for classic XXE (file read / SSRF) on any
+        # modern Python. We use lxml with resolve_entities=True instead,
+        # which DOES resolve <!ENTITY x SYSTEM "file://..."> references.
+        xxe_parser = etree.XMLParser(resolve_entities=True, no_network=False,
+                                      load_dtd=True, huge_tree=True)
+        root = etree.fromstring(xml_data, parser=xxe_parser)
         books_added = 0
 
         conn = get_shop_db()
@@ -2316,4 +2354,9 @@ if __name__ == '__main__':
     init_user_db()
     init_shop_db()
     init_race_lab_db()
+    # BONUS — Not counted in the README's 13 categories, but real: debug
+    # mode enables Werkzeug's interactive debugger (a documented RCE
+    # vector if this ever becomes reachable from outside localhost), and
+    # host='0.0.0.0' binds to every network interface, not just loopback.
+    # Intentional for the lab; keep this on an isolated machine/network.
     app.run(debug=True, host='0.0.0.0', port=5005)

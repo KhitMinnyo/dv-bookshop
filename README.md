@@ -26,6 +26,14 @@ An **intentionally vulnerable** e-commerce web application built with **Python F
 
 ---
 
+## ⚠️ Additional Flagged Risk (not in the table above)
+
+An independent verification pass (Sept 2026) confirmed every category above against the running code, and flagged one more real risk that isn't part of the 13-category count: the app launches with `app.run(debug=True, host='0.0.0.0', port=5005)`. `debug=True` turns on Werkzeug's **interactive debugger**, a documented remote-code-execution vector if this port is ever reachable from outside `localhost` (the debugger PIN is a mitigation, not a guarantee), and `host='0.0.0.0'` binds to every network interface rather than just loopback. This is intentional for a hands-on lab, but keep it on an isolated machine/network — never expose port 5005 to an untrusted network.
+
+The same pass also confirmed two labeled vulnerabilities needed a fix to actually work against current dependencies: L3 (XXE) now uses `lxml` with `resolve_entities=True` instead of stdlib `ElementTree` (which silently ignores external entities), and L2 (header injection) restores Werkzeug's pre-fix permissive header handling, since Werkzeug >=2.1 otherwise rejects `\r`/`\n` in header values by default. Both are re-verified working as of this pass. See `dv-bookshop-vuln-verification.md` (local-only, gitignored) for the full report.
+
+---
+
 ## 🎚️ Lab Control Panel & Difficulty Toggle
 
 Visit **`/lab`** to switch selected vulnerabilities between **INSECURE** (vulnerable, default) and **SECURE** (patched) mode — no code editing needed. Great for demonstrating before/after in class. State is saved to `lab_config.json` and survives restarts.
