@@ -1,0 +1,8 @@
+# The browser identity can observe one warehouse's topics but cannot publish.
+user dashboard
+topic read warehouse/01/#
+
+# The local backend still needs to ingest and seed the synthetic fleet data.
+user ingestor
+topic readwrite warehouse/#
+topic readwrite inventory/#

@@ -1,0 +1,10 @@
+services:
+  broker:
+    volumes:
+      - ./acl-hardened:/mosquitto/config/acl:ro
+  backend:
+    environment:
+      LAB_MODE: hardened
+  storage-gateway:
+    environment:
+      LAB_MODE: hardened

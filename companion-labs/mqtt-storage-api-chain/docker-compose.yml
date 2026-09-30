@@ -1,0 +1,118 @@
+services:
+  broker:
+    image: eclipse-mosquitto:2.0.21
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mosquitto_passwd -b -c /tmp/lab-password dashboard dashboard-lab-only &&
+        mosquitto_passwd -b /tmp/lab-password ingestor ingestor-lab-only &&
+        cp /mosquitto/config/acl /tmp/lab-acl &&
+        chown mosquitto:mosquitto /tmp/lab-password /tmp/lab-acl &&
+        chmod 0700 /tmp/lab-password /tmp/lab-acl &&
+        exec mosquitto -c /mosquitto/config/mosquitto.conf
+    ports:
+      - "127.0.0.1:18883:1883"
+      - "127.0.0.1:18885:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./acl-vulnerable:/mosquitto/config/acl:ro
+    tmpfs:
+      - /tmp:size=4m,mode=1777
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+    networks:
+      lab-network:
+        aliases:
+          - broker
+
+  storage:
+    image: dv-bookshop-mqtt-storage-api-chain:local
+    command: ["moto_server", "-H", "0.0.0.0", "-p", "9000"]
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/', timeout=2)"
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    networks:
+      lab-network:
+        aliases:
+          - storage
+
+  storage-gateway:
+    image: dv-bookshop-mqtt-storage-api-chain:local
+    command: ["python", "storage_gateway.py"]
+    environment:
+      LAB_MODE: vulnerable
+    ports:
+      - "127.0.0.1:9900:9001"
+    depends_on:
+      backend:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9001/healthz', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      lab-network: {}
+
+  backend:
+    build: .
+    image: dv-bookshop-mqtt-storage-api-chain:local
+    environment:
+      LAB_MODE: vulnerable
+      MQTT_HOST: broker
+      MQTT_PORT: "1883"
+      MQTT_USERNAME: ingestor
+      MQTT_PASSWORD: ingestor-lab-only
+    ports:
+      - "127.0.0.1:5100:5000"
+    depends_on:
+      broker:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,mode=1777
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      lab-network: {}
+
+networks:
+  lab-network:
+    driver: bridge

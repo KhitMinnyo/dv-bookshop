@@ -1,0 +1,8 @@
+{
+  "device_id": "warehouse-01",
+  "tenant": "tenant-a",
+  "broker": "mqtt://127.0.0.1:18883",
+  "address": "192.0.2.41",
+  "firmware_track": "training-stable",
+  "synthetic": true
+}

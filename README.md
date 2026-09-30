@@ -240,6 +240,8 @@ All infrastructure lab ports are separate from the core app. Do not connect them
 | `websocket-streaming/` | JSON/binary frames, streaming events, message limits, and authorization |
 | `grpc-streaming/` | Server/client/bidirectional streaming, metadata, TLS, mTLS, and gRPC-Web concepts |
 | `prototype-pollution/` | Node.js object pollution, deep merge, path setter, and safe filtering |
+| `image-processing-heic/` | Isolated Pillow/HEIF upload processing, thumbnail generation, and controlled parser-diagnostic disclosure |
+| `mqtt-storage-api-chain/` | Local Mosquitto, Moto S3 mock, frontend credential, MQTT ACL, and tenant API attack chain |
 
 Each companion lab has its own README, dependencies, ports, and cleanup instructions. Do not install or run every lab in the core `run.sh` environment.
 
@@ -249,8 +251,9 @@ Each companion lab has its own README, dependencies, ports, and cleanup instruct
 2. Complete `optional-labs/` in this order: Host Header, Archive, YAML, MFA, Multi-tenant, Payment mock.
 3. Study `infra-labs/tls/` and `infra-labs/gateway/` before HTTP desynchronization and cache labs.
 4. Study `companion-labs/cloud-iam-storage/`, `kubernetes/`, and `distributed-race/` with disposable local infrastructure.
-5. Complete the SAML, WebAuthn, mobile, WebSocket, gRPC, and prototype-pollution labs using their stated toolchains.
-6. Record scope, baseline, evidence, cleanup, and remediation for every exercise.
+5. Complete the image-processing and MQTT/storage/API research labs using their isolated Docker Compose stacks.
+6. Complete the SAML, WebAuthn, mobile, WebSocket, gRPC, and prototype-pollution labs using their stated toolchains.
+7. Record scope, baseline, evidence, cleanup, and remediation for every exercise.
 
 All offensive examples in these directories are for local, owned, or explicitly authorized training targets only.
 

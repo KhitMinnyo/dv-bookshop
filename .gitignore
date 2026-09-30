@@ -11,6 +11,7 @@ optional-labs/uploads/
 infra-labs/tls/generated/*
 companion-labs/*/generated/
 companion-labs/*/__pycache__/
+companion-labs/image-processing-heic/runtime/
 
 # Python and Node local environments
 __pycache__/

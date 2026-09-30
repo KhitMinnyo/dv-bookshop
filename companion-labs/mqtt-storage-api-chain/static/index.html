@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DV Bookshop | Warehouse Network</title>
+  <style>
+    :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; background: #10151b; color: #e8edf2; }
+    body { max-width: 1100px; margin: 2rem auto; padding: 0 1.2rem; }
+    header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 1rem; border-bottom: 1px solid #35424d; }
+    h1 { letter-spacing: -.04em; } p, small { color: #aab6c2; }
+    #connection { color: #91d6a3; }
+    #telemetry, #api-output { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .9rem; margin: 1.2rem 0; }
+    article, section.panel { border: 1px solid #35424d; border-radius: 10px; padding: 1rem; background: #171f27; }
+    article h2 { font-size: 1rem; overflow-wrap: anywhere; }
+    article pre, #api-output pre { white-space: pre-wrap; overflow-wrap: anywhere; color: #d8c28f; }
+    label, select, button { margin: .4rem .4rem .4rem 0; }
+    button { padding: .55rem .9rem; border: 0; border-radius: 5px; cursor: pointer; background: #78b6c5; color: #071116; font-weight: 700; }
+    code { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <header>
+    <div><h1>Warehouse Operations</h1><p>Local training fleet telemetry and device inventory</p></div>
+    <p id="connection">Connecting to local telemetry bridge...</p>
+  </header>
+  <main>
+    <section aria-labelledby="telemetry-title">
+      <h2 id="telemetry-title">Live Device Telemetry</h2>
+      <div id="telemetry" aria-live="polite"></div>
+    </section>
+    <section class="panel" aria-labelledby="api-title">
+      <h2 id="api-title">Warehouse Service API</h2>
+      <p>Review device inventory and configuration returned by the local API.</p>
+      <label for="tenant">Tenant context</label>
+      <select id="tenant"><option value="tenant-a">Northstar Books</option><option value="tenant-b">Bluebird Learning</option></select>
+      <button id="load-api" type="button">Load API data</button>
+      <div id="api-output" aria-live="polite"></div>
+    </section>
+    <p><small>All devices, addresses, tokens, messages, and files are synthetic local training data. No real hardware or cloud service is connected.</small></p>
+  </main>
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

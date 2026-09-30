@@ -1,0 +1,25 @@
+services:
+  image-lab:
+    build: .
+    environment:
+      LAB_MODE: vulnerable
+      LAB_RUNTIME_DIR: /lab/runtime
+    ports:
+      - "127.0.0.1:5507:5000"
+    read_only: true
+    tmpfs:
+      - /lab/runtime:rw,size=64m,uid=10001,gid=10001,mode=0700
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 256m
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 10

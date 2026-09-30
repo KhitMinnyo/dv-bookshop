@@ -1,0 +1,8 @@
+# Intentionally broad for the exposed dashboard-only training identity.
+user dashboard
+topic readwrite #
+
+# The backend subscriber/fixture publisher is a separate local service identity.
+user ingestor
+topic readwrite warehouse/#
+topic readwrite inventory/#
