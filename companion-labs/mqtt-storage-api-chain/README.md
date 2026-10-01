@@ -96,7 +96,7 @@ bash companion-labs/mqtt-storage-api-chain/stop.sh
 bash companion-labs/mqtt-storage-api-chain/start.sh hardened
 ```
 
-Confirm that the dashboard credential cannot read other devices or publish, anonymous bucket listing/object reads fail, invalid API tokens return `401`, cross-tenant requests return `403`, and tenant A still reads its own synthetic data. Stop with `stop.sh`; the in-memory storage fixture is discarded with its container.
+Confirm that the dashboard credential cannot read other devices or publish, unauthenticated telemetry and anonymous bucket listing/object reads fail, invalid API tokens return `401`, cross-tenant requests return `403`, and each valid tenant token sees only its own telemetry and synthetic API data. Stop with `stop.sh`; the in-memory storage fixture is discarded with its container.
 
 ## MAINTAINER / SOLUTION GUIDE
 
@@ -106,7 +106,7 @@ The default dashboard bundle (`static/dashboard.js`) intentionally contains the 
 
 The retained `warehouse/01/config` message exposes local S3 object and bucket-list URLs. At backend startup, `initialize_storage()` seeds the Moto-backed `warehouse-assets` bucket and applies an anonymous `ListBucket`/`GetObject` policy in vulnerable mode. The local path-style gateway makes the synthetic object listing and read behavior observable on port `9900`. No real secrets or executable firmware are stored there.
 
-The API requires a non-empty Bearer token but treats any value as the same tenant-A reader. It then trusts `tenant` query input or `X-Tenant-ID` to select either synthetic tenant. This demonstrates weak authentication and a separate tenant authorization/isolation failure.
+The API requires a non-empty Bearer token but treats any value as the same tenant-A reader. It then trusts `tenant` query input or `X-Tenant-ID` to select either synthetic tenant. The vulnerable telemetry endpoint is unauthenticated and returns every simulated topic. This demonstrates weak authentication and separate tenant authorization/isolation failures.
 
 ### Exact Local Demonstration
 
@@ -157,7 +157,7 @@ curl -s 'http://127.0.0.1:5100/api/devices?tenant=tenant-b' \
 
 - `acl-vulnerable` grants the exposed `dashboard` MQTT identity `readwrite #`. `acl-hardened` limits it to reading `warehouse/01/#`; publish and other-topic access are denied. The separate backend `ingestor` identity remains scoped to the synthetic fleet topics it needs.
 - The Flask startup code applies a Moto bucket policy allowing anonymous `ListBucket` and `GetObject` in vulnerable mode. `storage_gateway.py` exposes only those path-style S3 operations for the training bucket and returns `403` for anonymous requests in hardened mode. Hardened startup also removes the bucket policy while preserving fixture objects.
-- In vulnerable mode, `api_identity()` accepts any non-empty Bearer value and `tenant_for_request()` honors client-controlled tenant context. Hardened mode recognizes only the two fixed dummy tokens and rejects tenant selection that differs from the verified identity's tenant.
+- In vulnerable mode, `api_identity()` accepts any non-empty Bearer value and `tenant_for_request()` honors client-controlled tenant context. The telemetry API is also unauthenticated and returns all topics. Hardened mode recognizes only the two fixed dummy tokens, rejects tenant selection that differs from the verified identity's tenant, and scopes telemetry to the identity's tenant.
 - `docker-compose.hardened.yml` changes the ACL mount and sets `LAB_MODE=hardened` for the Flask backend (including storage initialization) and S3 API gateway. It does not disable the local services or alter the static demonstration bundle; exposed frontend values must be treated as public even after backend controls are corrected.
 
 Verify MQTT read/publish denial and local API behavior:
@@ -174,4 +174,4 @@ curl -i http://127.0.0.1:5100/api/devices \
 curl -i 'http://127.0.0.1:9900/warehouse-assets?list-type=2'
 ```
 
-The cross-tenant request returns `403`, the fabricated token returns `401`, and anonymous Moto S3 access is denied. A publish with the dashboard credential is denied by the broker ACL; verify `/api/telemetry` still reports the baseline or its last retained authorized value. The fixed dashboard token can still retrieve tenant A data. Run `bash companion-labs/mqtt-storage-api-chain/clean.sh` to remove the containers and local image.
+The cross-tenant request returns `403`, fabricated API tokens and unauthenticated telemetry requests return `401`, and anonymous Moto S3 access is denied. The tenant-A dashboard token sees warehouse topics only; the tenant-B training token sees inventory topics only. A publish with the dashboard credential is denied by the broker ACL; verify the tenant-A temperature stays at its baseline value. Run `bash companion-labs/mqtt-storage-api-chain/clean.sh` to remove the containers and local image.

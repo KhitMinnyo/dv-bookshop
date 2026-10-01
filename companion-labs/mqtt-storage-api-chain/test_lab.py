@@ -11,6 +11,7 @@ class MqttStorageApiChainTests(unittest.TestCase):
     def setUp(self):
         self.previous_mode = lab.LAB_MODE
         self.previous_storage_mode = storage_gateway.LAB_MODE
+        lab.telemetry = dict(lab.INITIAL_TELEMETRY)
         lab.app.config["TESTING"] = True
         self.client = lab.app.test_client()
         self.storage_client = storage_gateway.app.test_client()
@@ -48,6 +49,16 @@ class MqttStorageApiChainTests(unittest.TestCase):
         self.assertEqual(self.client.get("/api/devices", headers=headers).status_code, 403)
         self.assertEqual(self.client.get("/api/devices?tenant=tenant-b", headers=headers).status_code, 403)
         self.assertEqual(self.client.get("/api/devices", headers={"Authorization": "Bearer made-up"}).status_code, 401)
+
+    def test_hardened_telemetry_requires_identity_and_is_tenant_scoped(self):
+        lab.LAB_MODE = "hardened"
+        self.assertEqual(self.client.get("/api/telemetry").status_code, 401)
+        tenant_a = self.client.get("/api/telemetry", headers={"Authorization": "Bearer tenant-a-demo-token"})
+        self.assertEqual(tenant_a.status_code, 200)
+        self.assertTrue(all(topic.startswith("warehouse/") for topic in tenant_a.get_json()["messages"]))
+        tenant_b = self.client.get("/api/telemetry", headers={"Authorization": "Bearer tenant-b-demo-token"})
+        self.assertEqual(tenant_b.status_code, 200)
+        self.assertTrue(all(topic.startswith("inventory/") for topic in tenant_b.get_json()["messages"]))
 
     def test_storage_gateway_changes_public_access_by_mode(self):
         storage_gateway.LAB_MODE = "vulnerable"

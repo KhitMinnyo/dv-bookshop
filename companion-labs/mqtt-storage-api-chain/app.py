@@ -221,8 +221,17 @@ def healthz():
 
 @app.get("/api/telemetry")
 def get_telemetry():
+    identity = None
+    if LAB_MODE == "hardened":
+        identity = api_identity()
+        if identity is None:
+            return jsonify({"error": "authentication required"}), 401
+
     with telemetry_lock:
         current = dict(telemetry)
+    if identity is not None:
+        topic_prefix = "warehouse/" if identity["tenant"] == "tenant-a" else "inventory/"
+        current = {topic: value for topic, value in current.items() if topic.startswith(topic_prefix)}
     return jsonify({"messages": current, "mqtt_connected": mqtt_connected.is_set()})
 
 

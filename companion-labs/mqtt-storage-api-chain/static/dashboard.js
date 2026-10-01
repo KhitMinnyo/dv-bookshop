@@ -24,7 +24,9 @@ function renderTelemetry(messages) {
 
 async function refreshTelemetry() {
   try {
-    const response = await fetch('/api/telemetry');
+    const response = await fetch('/api/telemetry', {
+      headers: { Authorization: `Bearer ${LAB_API_TOKEN}` },
+    });
     const result = await response.json();
     renderTelemetry(result.messages);
     document.querySelector('#connection').textContent = result.mqtt_connected
